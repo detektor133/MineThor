@@ -240,8 +240,12 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
     @Override
     public void onAttachedToWindow() {
-        LauncherPreferences.computeNotchSize(this);
-        loadControls();
+        // Post to get the correct display dimensions after layout.
+        mControlLayout.post(()->{
+            LauncherPreferences.computeNotchSize(this);
+            Tools.getDisplayMetrics(this);
+            loadControls();
+        });
     }
 
     /** Boilerplate binding */
@@ -299,9 +303,16 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         super.onConfigurationChanged(newConfig);
 
         if(mGyroControl != null) mGyroControl.updateOrientation();
-        Tools.updateWindowSize(this);
-        minecraftGLView.refreshSize();
-        runOnUiThread(() -> mControlLayout.refreshControlButtonPositions());
+        // Layout resize is practically guaranteed on a configuration change, and `onConfigurationChanged`
+        // does not implicitly start a layout. So, request a layout and expect the screen dimensions to be valid after the]
+        // post.
+        mControlLayout.requestLayout();
+        mControlLayout.post(()->{
+            // Child of mControlLayout, so refreshing size here is correct
+            minecraftGLView.refreshSize();
+            Tools.updateWindowSize(this);
+            mControlLayout.refreshControlButtonPositions();
+        });
     }
 
     @Override

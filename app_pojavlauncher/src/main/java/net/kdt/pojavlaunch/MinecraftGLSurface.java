@@ -326,14 +326,22 @@ public class MinecraftGLSurface extends View implements GrabListener {
         return true;
     }
 
-
-
-
-
     /** Called when the size need to be set at any point during the surface lifecycle **/
     public void refreshSize(){
-        windowWidth = Tools.getDisplayFriendlyRes(Tools.currentDisplayMetrics.widthPixels, mScaleFactor);
-        windowHeight = Tools.getDisplayFriendlyRes(Tools.currentDisplayMetrics.heightPixels, mScaleFactor);
+        refreshSize(false);
+    }
+
+    /** Same as refreshSize, but allows you to force an immediate size update **/
+    public void refreshSize(boolean immediate) {
+        if(isInLayout() && !immediate) {
+            post(this::refreshSize);
+            return;
+        }
+        // Use the width and height of the View instead of display dimensions to avoid
+        // getting squiched/stretched due to inconsistencies between the layout and
+        // screen dimensions.
+        windowWidth = Tools.getDisplayFriendlyRes(getWidth(), mScaleFactor);
+        windowHeight = Tools.getDisplayFriendlyRes(getHeight(), mScaleFactor);
         if(mSurface == null){
             Log.w("MGLSurface", "Attempt to refresh size on null surface");
             return;
@@ -355,8 +363,9 @@ public class MinecraftGLSurface extends View implements GrabListener {
     }
 
     private void realStart(Surface surface){
-        // Initial size set
-        refreshSize();
+        // Initial size set. Request immedate refresh, otherwise the initial width and height for the game
+        // may be broken/unknown.
+        refreshSize(true);
 
         //Load Minecraft options:
         MCOptionUtils.set("fullscreen", "off");
