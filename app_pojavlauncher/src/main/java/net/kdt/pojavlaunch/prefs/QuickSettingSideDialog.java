@@ -147,10 +147,10 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
         mResolutionBar.setRange(25, 100);
         mResolutionBar.setIncrement(5);
         mResolutionBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
-            onResolutionChanged();
             PREF_SCALE_FACTOR = progress;
             LauncherPreferences.DEFAULT_PREF.edit().putInt("resolutionRatio", progress).apply();
             mResolutionText.setText(progress + "%");
+            onResolutionChanged();
         });
         mResolutionBar.setProgress(mOriginalResolution);
 
@@ -195,18 +195,21 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
 
     /** Resets all settings to their original values */
     public void cancel() {
-        PREF_ENABLE_GYRO = mOriginalGyroEnabled;
-        PREF_GYRO_INVERT_X = mOriginalGyroXEnabled;
-        PREF_GYRO_INVERT_Y = mOriginalGyroYEnabled;
-        PREF_DISABLE_GESTURES = mOriginalGestureDisabled;
+        // Reset all settings if we were editing
+        if(isDisplaying()) {
+            PREF_ENABLE_GYRO = mOriginalGyroEnabled;
+            PREF_GYRO_INVERT_X = mOriginalGyroXEnabled;
+            PREF_GYRO_INVERT_Y = mOriginalGyroYEnabled;
+            PREF_DISABLE_GESTURES = mOriginalGestureDisabled;
 
-        PREF_GYRO_SENSITIVITY = mOriginalGyroSensitivity;
-        PREF_MOUSESPEED = mOriginalMouseSpeed;
-        PREF_LONGPRESS_TRIGGER = mOriginalGestureDelay;
-        PREF_SCALE_FACTOR = mOriginalResolution;
+            PREF_GYRO_SENSITIVITY = mOriginalGyroSensitivity;
+            PREF_MOUSESPEED = mOriginalMouseSpeed;
+            PREF_LONGPRESS_TRIGGER = mOriginalGestureDelay;
+            PREF_SCALE_FACTOR = mOriginalResolution;
 
-        onGyroStateChanged();
-        onResolutionChanged();
+            onGyroStateChanged();
+            onResolutionChanged();
+        }
 
         disappear();
     }

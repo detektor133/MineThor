@@ -136,4 +136,9 @@ public class SideDialogView<T extends View> {
 
         mSideDialogAnimator.start();
     }
+
+    /** @return Whether the dialog is currently displaying */
+    protected boolean isDisplaying(){
+        return mDisplaying;
+    }
 }
