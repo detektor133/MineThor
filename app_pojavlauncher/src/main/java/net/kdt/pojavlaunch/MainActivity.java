@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch;
 
 import static net.kdt.pojavlaunch.Tools.currentDisplayMetrics;
+import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_ENABLE_GYRO;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_SUSTAINED_PERFORMANCE;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_USE_ALTERNATE_SURFACE;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_VIRTUAL_MOUSE_START;
@@ -55,6 +56,7 @@ import net.kdt.pojavlaunch.customcontrols.mouse.GyroControl;
 import net.kdt.pojavlaunch.customcontrols.mouse.Touchpad;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutor;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
+import net.kdt.pojavlaunch.prefs.QuickSettingSideDialog;
 import net.kdt.pojavlaunch.services.GameService;
 import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
@@ -91,6 +93,8 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     public AdapterView.OnItemClickListener ingameControlsEditorListener;
     private GameService.LocalBinder mServiceBinder;
 
+    private QuickSettingSideDialog mQuickSettingSideDialog;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,7 +107,8 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         initLayout(R.layout.activity_basemain);
         CallbackBridge.addGrabListener(touchpad);
         CallbackBridge.addGrabListener(minecraftGLView);
-        if(LauncherPreferences.PREF_ENABLE_GYRO) mGyroControl = new GyroControl(this);
+
+        mGyroControl = new GyroControl(this);
 
         // Enabling this on TextureView results in a broken white result
         if(PREF_USE_ALTERNATE_SURFACE) getWindow().setBackgroundDrawable(null);
@@ -185,9 +190,8 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                     case 0: dialogForceClose(MainActivity.this); break;
                     case 1: openLogOutput(); break;
                     case 2: dialogSendCustomKey(); break;
-                    case 3: adjustMouseSpeedLive(); break;
-                    case 4: adjustGyroSensitivityLive(); break;
-                    case 5: openCustomControls(); break;
+                    case 3: mQuickSettingSideDialog.appear(true); break;
+                    case 4: openCustomControls(); break;
                 }
                 drawerLayout.closeDrawers();
             };
@@ -208,6 +212,23 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                     Tools.showErrorRemote(e);
                 }
             });
+
+            mQuickSettingSideDialog = new QuickSettingSideDialog(this, mControlLayout) {
+                @Override
+                public void onResolutionChanged() {
+                    //TODO: reflect the change in event positions sent down to the game
+                    minecraftGLView.refreshSize();
+                }
+
+                @Override
+                public void onGyroStateChanged() {
+                    if (PREF_ENABLE_GYRO) {
+                        mGyroControl.enable();
+                    } else {
+                        mGyroControl.disable();
+                    }
+                }
+            };
         } catch (Throwable e) {
             Tools.showError(this, e, true);
         }
@@ -260,16 +281,17 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     @Override
     public void onResume() {
         super.onResume();
-        if(mGyroControl != null) mGyroControl.enable();
+        if(PREF_ENABLE_GYRO) mGyroControl.enable();
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_HOVERED, 1);
     }
 
     @Override
     protected void onPause() {
-        if(mGyroControl != null) mGyroControl.disable();
+        mGyroControl.disable();
         if (CallbackBridge.isGrabbing()){
             sendKeyPress(LwjglGlfwKeycode.GLFW_KEY_ESCAPE);
         }
+        mQuickSettingSideDialog.cancel();
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_HOVERED, 0);
         super.onPause();
     }
@@ -421,83 +443,6 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
     public static void switchKeyboardState() {
         if(touchCharInput != null) touchCharInput.switchKeyboardState();
-    }
-
-
-    int tmpMouseSpeed;
-    public void adjustMouseSpeedLive() {
-        AlertDialog.Builder b = new AlertDialog.Builder(this);
-        b.setTitle(R.string.mcl_setting_title_mousespeed);
-        View v = LayoutInflater.from(this).inflate(R.layout.dialog_live_mouse_speed_editor,null);
-        final SeekBar sb = v.findViewById(R.id.mouseSpeed);
-        final TextView tv = v.findViewById(R.id.mouseSpeedTV);
-        sb.setMax(275);
-        tmpMouseSpeed = (int) ((LauncherPreferences.PREF_MOUSESPEED*100));
-        sb.setProgress(tmpMouseSpeed-25);
-        tv.setText(getString(R.string.percent_format, tmpMouseSpeed));
-        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                tmpMouseSpeed = i+25;
-                tv.setText(getString(R.string.percent_format, tmpMouseSpeed));
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-        b.setView(v);
-        b.setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {
-            LauncherPreferences.PREF_MOUSESPEED = ((float)tmpMouseSpeed)/100f;
-            LauncherPreferences.DEFAULT_PREF.edit().putInt("mousespeed",tmpMouseSpeed).apply();
-            dialogInterface.dismiss();
-            System.gc();
-        });
-        b.setNegativeButton(android.R.string.cancel, (dialogInterface, i) -> {
-            dialogInterface.dismiss();
-            System.gc();
-        });
-        b.show();
-    }
-
-    int tmpGyroSensitivity;
-    public void adjustGyroSensitivityLive() {
-        if(!LauncherPreferences.PREF_ENABLE_GYRO) {
-            Toast.makeText(this, R.string.toast_turn_on_gyro, Toast.LENGTH_LONG).show();
-            return;
-        }
-        AlertDialog.Builder b = new AlertDialog.Builder(this);
-        b.setTitle(R.string.preference_gyro_sensitivity_title);
-        View v = LayoutInflater.from(this).inflate(R.layout.dialog_live_mouse_speed_editor,null);
-        final SeekBar sb = v.findViewById(R.id.mouseSpeed);
-        final TextView tv = v.findViewById(R.id.mouseSpeedTV);
-        sb.setMax(275);
-        tmpGyroSensitivity = (int) ((LauncherPreferences.PREF_GYRO_SENSITIVITY*100));
-        sb.setProgress(tmpGyroSensitivity -25);
-        tv.setText(getString(R.string.percent_format, tmpGyroSensitivity));
-        sb.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override
-            public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-                tmpGyroSensitivity = i+25;
-                tv.setText(getString(R.string.percent_format, tmpGyroSensitivity));
-            }
-            @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {}
-            @Override
-            public void onStopTrackingTouch(SeekBar seekBar) {}
-        });
-        b.setView(v);
-        b.setPositiveButton(android.R.string.ok, (dialogInterface, i) -> {
-            LauncherPreferences.PREF_GYRO_SENSITIVITY = ((float) tmpGyroSensitivity)/100f;
-            LauncherPreferences.DEFAULT_PREF.edit().putInt("gyroSensitivity", tmpGyroSensitivity).apply();
-            dialogInterface.dismiss();
-            System.gc();
-        });
-        b.setNegativeButton(android.R.string.cancel, (dialogInterface, i) -> {
-            dialogInterface.dismiss();
-            System.gc();
-        });
-        b.show();
     }
 
     private static void setUri(Context context, String input, Intent intent) {
