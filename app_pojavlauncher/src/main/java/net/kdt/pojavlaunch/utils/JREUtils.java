@@ -323,7 +323,7 @@ public class JREUtils {
 
             LifecycleAwareAlertDialog.haltOnDialog(activity.getLifecycle(), activity, dialogCreator);
         }
-        MainActivity.fullyExit();
+        Tools.fullyExit();
     }
 
     /**

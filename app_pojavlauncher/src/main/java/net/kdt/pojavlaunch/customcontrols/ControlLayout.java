@@ -1,7 +1,6 @@
 package net.kdt.pojavlaunch.customcontrols;
 
 import static android.content.Context.INPUT_METHOD_SERVICE;
-import static net.kdt.pojavlaunch.MainActivity.mControlLayout;
 import static net.kdt.pojavlaunch.Tools.currentDisplayMetrics;
 
 import static org.lwjgl.glfw.CallbackBridge.isGrabbing;

@@ -668,7 +668,7 @@ public final class Tools {
                     .setPositiveButton(android.R.string.ok, (p1, p2) -> {
                         if(exitIfOk) {
                             if (ctx instanceof MainActivity) {
-                                MainActivity.fullyExit();
+                                fullyExit();
                             } else if (ctx instanceof Activity) {
                                 ((Activity) ctx).finish();
                             }
@@ -680,7 +680,7 @@ public final class Tools {
                         mgr.setPrimaryClip(ClipData.newPlainText("error", printToString(e)));
                         if(exitIfOk) {
                             if (ctx instanceof MainActivity) {
-                                MainActivity.fullyExit();
+                                fullyExit();
                             } else {
                                 ((Activity) ctx).finish();
                             }
@@ -952,6 +952,24 @@ public final class Tools {
         File file = new File(nameOutput);
         DownloadUtils.downloadFile(urlInput, file);
     }
+
+    public static boolean isAndroid8OrHigher() {
+        return SDK_INT >= 26;
+    }
+
+    public static void fullyExit() {
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
+
+    public static void printLauncherInfo(String gameVersion, String javaArguments) {
+        Logger.appendToLog("Info: Launcher version: " + BuildConfig.VERSION_NAME);
+        Logger.appendToLog("Info: Architecture: " + Architecture.archAsString(DEVICE_ARCHITECTURE));
+        Logger.appendToLog("Info: Device model: " + Build.MANUFACTURER + " " +Build.MODEL);
+        Logger.appendToLog("Info: API version: " + SDK_INT);
+        Logger.appendToLog("Info: Selected Minecraft version: " + gameVersion);
+        Logger.appendToLog("Info: Custom Java arguments: \"" + javaArguments + "\"");
+    }
+
     public interface DownloaderFeedback {
         void updateProgress(int curr, int max);
     }

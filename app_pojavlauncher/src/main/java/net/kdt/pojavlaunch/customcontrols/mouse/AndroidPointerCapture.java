@@ -8,7 +8,6 @@ import android.view.ViewTreeObserver;
 
 import androidx.annotation.RequiresApi;
 
-import net.kdt.pojavlaunch.MainActivity;
 import net.kdt.pojavlaunch.MinecraftGLSurface;
 import net.kdt.pojavlaunch.Tools;
 
@@ -130,7 +129,7 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
 
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
-        if(hasFocus && MainActivity.isAndroid8OrHigher()) mHostView.requestPointerCapture();
+        if(hasFocus && Tools.isAndroid8OrHigher()) mHostView.requestPointerCapture();
     }
 
     public void detach() {

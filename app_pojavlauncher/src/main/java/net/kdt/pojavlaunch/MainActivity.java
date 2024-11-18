@@ -27,15 +27,12 @@ import android.provider.DocumentsContract;
 import android.util.Log;
 import android.view.InputDevice;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.SeekBar;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -84,7 +81,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     private ListView navDrawer;
     private View mDrawerPullButton;
     private GyroControl mGyroControl = null;
-    public static ControlLayout mControlLayout;
+    private ControlLayout mControlLayout;
 
     MinecraftProfile minecraftProfile;
 
@@ -197,7 +194,6 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
             navDrawer.setAdapter(gameActionArrayAdapter);
             navDrawer.setOnItemClickListener(gameActionClickListener);
             drawerLayout.closeDrawers();
-
 
             final String finalVersion = version;
             minecraftGLView.setSurfaceReadyListener(() -> {
@@ -337,14 +333,6 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         }
     }
 
-    public static void fullyExit() {
-        android.os.Process.killProcess(android.os.Process.myPid());
-    }
-
-    public static boolean isAndroid8OrHigher() {
-        return Build.VERSION.SDK_INT >= 26;
-    }
-
     private void runCraft(String versionId, JMinecraftVersionList.Version version) throws Throwable {
         if(Tools.LOCAL_RENDERER == null) {
             Tools.LOCAL_RENDERER = LauncherPreferences.PREF_RENDERER;
@@ -358,7 +346,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         }
         MinecraftAccount minecraftAccount = PojavProfile.getCurrentProfileContent(this, null);
         Logger.appendToLog("--------- Starting game with Launcher Debug!");
-        printLauncherInfo(versionId, Tools.isValidString(minecraftProfile.javaArgs) ? minecraftProfile.javaArgs : LauncherPreferences.PREF_CUSTOM_JAVA_ARGS);
+        Tools.printLauncherInfo(versionId, Tools.isValidString(minecraftProfile.javaArgs) ? minecraftProfile.javaArgs : LauncherPreferences.PREF_CUSTOM_JAVA_ARGS);
         JREUtils.redirectAndPrintJRELog();
         LauncherProfiles.load();
         int requiredJavaVersion = 8;
@@ -366,15 +354,6 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         Tools.launchMinecraft(this, minecraftAccount, minecraftProfile, versionId, requiredJavaVersion);
         //Note that we actually stall in the above function, even if the game crashes. But let's be safe.
         Tools.runOnUiThread(()-> mServiceBinder.isActive = false);
-    }
-
-    private void printLauncherInfo(String gameVersion, String javaArguments) {
-        Logger.appendToLog("Info: Launcher version: " + BuildConfig.VERSION_NAME);
-        Logger.appendToLog("Info: Architecture: " + Architecture.archAsString(Tools.DEVICE_ARCHITECTURE));
-        Logger.appendToLog("Info: Device model: " + Build.MANUFACTURER + " " +Build.MODEL);
-        Logger.appendToLog("Info: API version: " + Build.VERSION.SDK_INT);
-        Logger.appendToLog("Info: Selected Minecraft version: " + gameVersion);
-        Logger.appendToLog("Info: Custom Java arguments: \"" + javaArguments + "\"");
     }
 
     private void dialogSendCustomKey() {
@@ -413,7 +392,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok, (p1, p2) -> {
                     try {
-                        fullyExit();
+                        Tools.fullyExit();
                     } catch (Throwable th) {
                         Log.w(Tools.APP_NAME, "Could not enable System.exit() method!", th);
                     }
@@ -613,10 +592,10 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     @Override
     public void exitEditor() {
         try {
-            MainActivity.mControlLayout.loadLayout((CustomControls)null);
-            MainActivity.mControlLayout.setModifiable(false);
+            mControlLayout.loadLayout((CustomControls)null);
+            mControlLayout.setModifiable(false);
             System.gc();
-            MainActivity.mControlLayout.loadLayout(
+            mControlLayout.loadLayout(
                     minecraftProfile.controlFile == null
                             ? LauncherPreferences.PREF_DEFAULTCTRL_PATH
                             : Tools.CTRLMAP_PATH + "/" + minecraftProfile.controlFile);
@@ -624,7 +603,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         } catch (IOException e) {
             Tools.showError(this,e);
         }
-        //((MainActivity) this).mControlLayout.loadLayout((CustomControls)null);
+
         navDrawer.setAdapter(gameActionArrayAdapter);
         navDrawer.setOnItemClickListener(gameActionClickListener);
         isInEditor = false;
@@ -660,7 +639,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
     @Override
     public boolean dispatchTrackballEvent(MotionEvent ev) {
-        if(MainActivity.isAndroid8OrHigher() && checkCaptureDispatchConditions(ev))
+        if(Tools.isAndroid8OrHigher() && checkCaptureDispatchConditions(ev))
             return minecraftGLView.dispatchCapturedPointerEvent(ev);
         else return super.dispatchTrackballEvent(ev);
     }
