@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- FIXME: If I use wrap content for the scrollview, it goes overboard -->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="@dimen/_280sdp"
+    android:layout_marginVertical="@dimen/padding_heavy"
+
+    android:layout_height="match_parent"
+    android:layout_gravity="center_vertical"
+    android:background="@drawable/background_control_editor"
+    >
+
+    <com.kdt.DefocusableScrollView
+        android:id="@+id/side_dialog_scrollview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+
+        app:layout_constraintBottom_toTopOf="@+id/side_dialog_start_button"
+        app:layout_constraintTop_toBottomOf="@id/side_dialog_title_textview"
+
+        tools:background="@color/background_status_bar">
+        <!-- The content is inflated here -->
+    </com.kdt.DefocusableScrollView>
+
+    <TextView
+        android:id="@+id/side_dialog_title_textview"
+        style="@style/TextAppearance.AppCompat.Large"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_moderate"
+        android:visibility="gone"
+        app:layout_constraintStart_toStartOf="parent"
+
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Quick settings"
+        tools:visibility="visible" />
+
+    <View
+        android:id="@+id/side_dialog_title_divider"
+        style="@style/ThickDivider"
+        android:layout_width="match_parent"
+        android:paddingHorizontal="@dimen/padding_moderate"
+        android:visibility="gone"
+
+        app:layout_constraintTop_toBottomOf="@id/side_dialog_title_textview"
+
+        tools:visibility="visible"
+        />
+
+    <Button
+        android:id="@+id/side_dialog_start_button"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+
+
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:visibility="visible"
+        tools:text="Cancel"
+        />
+    <Button
+        android:id="@+id/side_dialog_end_button"
+        style="@style/Widget.AppCompat.Button.Borderless"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="visible"
+
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+
+        tools:visibility="visible"
+        tools:text="Confirm"
+        />
+</androidx.constraintlayout.widget.ConstraintLayout>
