@@ -76,7 +76,6 @@
 		android:layout_gravity="right"
 		android:background="?attr/colorBackgroundFloating"
 		android:fitsSystemWindows="false"
-		app:menu="@menu/menu_runopt"
 		android:id="@+id/main_navigation_view"/>
 
 </androidx.drawerlayout.widget.DrawerLayout>
