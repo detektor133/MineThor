@@ -124,6 +124,13 @@ public class HotbarView extends View implements MCOptionUtils.MCOptionListener, 
         return (int)((mGuiScale * input) / LauncherPreferences.PREF_SCALE_FACTOR);
     }
 
+    /** Forces the view to reposition itself. */
+    public void onResolutionChanged() {
+        if(getParent() == null) return;
+        mGuiScale = MCOptionUtils.getMcScale();
+        post(this::repositionView);
+    }
+
     @Override
     public void onOptionChanged() {
         post(this);

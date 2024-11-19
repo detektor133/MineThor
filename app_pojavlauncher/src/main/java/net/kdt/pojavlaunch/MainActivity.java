@@ -53,6 +53,7 @@ import net.kdt.pojavlaunch.customcontrols.EditorExitable;
 import net.kdt.pojavlaunch.customcontrols.keyboard.LwjglCharSender;
 import net.kdt.pojavlaunch.customcontrols.keyboard.TouchCharInput;
 import net.kdt.pojavlaunch.customcontrols.mouse.GyroControl;
+import net.kdt.pojavlaunch.customcontrols.mouse.HotbarView;
 import net.kdt.pojavlaunch.customcontrols.mouse.Touchpad;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutor;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
@@ -84,6 +85,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     private View mDrawerPullButton;
     private GyroControl mGyroControl = null;
     private ControlLayout mControlLayout;
+    private HotbarView mHotbarView;
 
     MinecraftProfile minecraftProfile;
 
@@ -259,6 +261,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         mControlLayout = findViewById(R.id.main_control_layout);
         touchCharInput = findViewById(R.id.mainTouchCharInput);
         mDrawerPullButton = findViewById(R.id.drawer_button);
+        mHotbarView = findViewById(R.id.hotbar_view);
     }
 
     @Override
@@ -389,6 +392,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                 @Override
                 public void onResolutionChanged() {
                     minecraftGLView.refreshSize();
+                    mHotbarView.onResolutionChanged();
                 }
 
                 @Override
