@@ -87,11 +87,6 @@ public class GyroControl implements SensorEventListener, GrabListener {
         SensorManager.getRotationMatrixFromVector(mCurrentRotation, sensorEvent.values);
 
 
-        float xLocalFactor = xFactor;
-        float yLocalFactor = yFactor;
-        if(LauncherPreferences.PREF_GYRO_INVERT_X) xLocalFactor *= -1;
-        if(LauncherPreferences.PREF_GYRO_INVERT_Y) yLocalFactor *= -1;
-
         if(mFirstPass){  // Setup initial position
             mFirstPass = false;
             return;
@@ -106,20 +101,20 @@ public class GyroControl implements SensorEventListener, GrabListener {
         float absY = Math.abs(mStoredY);
 
         if(absX + absY > MULTI_AXIS_LOW_PASS_THRESHOLD) {
-            CallbackBridge.mouseX -= ((mSwapXY ? mStoredY : mStoredX) * xLocalFactor);
-            CallbackBridge.mouseY += ((mSwapXY ? mStoredX : mStoredY) * yLocalFactor);
+            CallbackBridge.mouseX -= ((mSwapXY ? mStoredY : mStoredX) * xFactor);
+            CallbackBridge.mouseY += ((mSwapXY ? mStoredX : mStoredY) * yFactor);
             mStoredX = 0;
             mStoredY = 0;
             updatePosition = true;
         } else {
             if(Math.abs(mStoredX) > SINGLE_AXIS_LOW_PASS_THRESHOLD){
-                CallbackBridge.mouseX -= ((mSwapXY ? mStoredY : mStoredX) * xLocalFactor);
+                CallbackBridge.mouseX -= ((mSwapXY ? mStoredY : mStoredX) * xFactor);
                 mStoredX = 0;
                 updatePosition = true;
             }
 
             if(Math.abs(mStoredY) > SINGLE_AXIS_LOW_PASS_THRESHOLD) {
-                CallbackBridge.mouseY += ((mSwapXY ? mStoredX : mStoredY) * yLocalFactor);
+                CallbackBridge.mouseY += ((mSwapXY ? mStoredX : mStoredY) * yFactor);
                 mStoredY = 0;
                 updatePosition = true;
             }
@@ -156,6 +151,9 @@ public class GyroControl implements SensorEventListener, GrabListener {
                 yFactor = -1;
                 break;
         }
+
+        if(LauncherPreferences.PREF_GYRO_INVERT_X) xFactor *= -1;
+        if(LauncherPreferences.PREF_GYRO_INVERT_Y) yFactor *= -1;
     }
 
     @Override
@@ -244,6 +242,9 @@ public class GyroControl implements SensorEventListener, GrabListener {
                     }
                     break;
             }
+
+            if(LauncherPreferences.PREF_GYRO_INVERT_X) xFactor *= -1;
+            if(LauncherPreferences.PREF_GYRO_INVERT_Y) yFactor *= -1;
         }
     }
 }

@@ -222,6 +222,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
                 @Override
                 public void onGyroStateChanged() {
+                    mGyroControl.updateOrientation();
                     if (PREF_ENABLE_GYRO) {
                         mGyroControl.enable();
                     } else {

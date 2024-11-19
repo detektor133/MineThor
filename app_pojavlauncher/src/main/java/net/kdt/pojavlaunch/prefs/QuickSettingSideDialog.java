@@ -103,11 +103,13 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
 
         mGyroXSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             PREF_GYRO_INVERT_X = isChecked;
+            onGyroStateChanged();
             LauncherPreferences.DEFAULT_PREF.edit().putBoolean("gyroInvertX", isChecked).apply();
         });
 
         mGyroYSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             PREF_GYRO_INVERT_Y = isChecked;
+            onGyroStateChanged();
             LauncherPreferences.DEFAULT_PREF.edit().putBoolean("gyroInvertY", isChecked).apply();
         });
 
@@ -217,7 +219,11 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
     /** Called when the resolution is changed. Use {@link LauncherPreferences#PREF_SCALE_FACTOR} */
     public abstract void onResolutionChanged();
 
-    /** Called when the gyro state is changed. Use {@link LauncherPreferences#PREF_ENABLE_GYRO} */
+    /** Called when the gyro state is changed.
+     * Use {@link LauncherPreferences#PREF_ENABLE_GYRO}
+     * Use {@link LauncherPreferences#PREF_GYRO_INVERT_X}
+     * Use {@link LauncherPreferences#PREF_GYRO_INVERT_Y}
+     */
     public abstract void onGyroStateChanged();
 
 }
