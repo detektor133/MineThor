@@ -66,8 +66,6 @@ public class MinecraftGLSurface extends View implements GrabListener {
             .remapRightTrigger(true)
             .remapDpad(true));
 
-    /* Resolution scaler option, allow downsizing a window */
-    private float mScaleFactor = LauncherPreferences.PREF_SCALE_FACTOR/100f;
     /* Sensitivity, adjusted according to screen size */
     private final double mSensitivityFactor = (1.4 * (1080f/ Tools.getDisplayMetrics((Activity) getContext()).heightPixels));
 
@@ -78,7 +76,7 @@ public class MinecraftGLSurface extends View implements GrabListener {
     View mSurface;
 
     private final InGameEventProcessor mIngameProcessor = new InGameEventProcessor(mSensitivityFactor);
-    private final InGUIEventProcessor mInGUIProcessor = new InGUIEventProcessor(mScaleFactor);
+    private final InGUIEventProcessor mInGUIProcessor = new InGUIEventProcessor();
     private TouchEventProcessor mCurrentTouchProcessor = mInGUIProcessor;
     private AndroidPointerCapture mPointerCapture;
     private boolean mLastGrabState = false;
@@ -95,7 +93,7 @@ public class MinecraftGLSurface extends View implements GrabListener {
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void setUpPointerCapture(AbstractTouchpad touchpad) {
         if(mPointerCapture != null) mPointerCapture.detach();
-        mPointerCapture = new AndroidPointerCapture(touchpad, this, mScaleFactor);
+        mPointerCapture = new AndroidPointerCapture(touchpad, this);
     }
 
     /** Initialize the view and all its settings
@@ -197,7 +195,7 @@ public class MinecraftGLSurface extends View implements GrabListener {
 
             // Mouse found
             if(CallbackBridge.isGrabbing()) return false;
-            CallbackBridge.sendCursorPos(   e.getX(i) * mScaleFactor, e.getY(i) * mScaleFactor);
+            CallbackBridge.sendCursorPos(   e.getX(i) * LauncherPreferences.PREF_SCALE_FACTOR, e.getY(i) * LauncherPreferences.PREF_SCALE_FACTOR);
             return true; //mouse event handled successfully
         }
         if (mIngameProcessor == null || mInGUIProcessor == null) return true;
@@ -236,8 +234,8 @@ public class MinecraftGLSurface extends View implements GrabListener {
 
         switch(event.getActionMasked()) {
             case MotionEvent.ACTION_HOVER_MOVE:
-                CallbackBridge.mouseX = (event.getX(mouseCursorIndex) * mScaleFactor);
-                CallbackBridge.mouseY = (event.getY(mouseCursorIndex) * mScaleFactor);
+                CallbackBridge.mouseX = (event.getX(mouseCursorIndex) * LauncherPreferences.PREF_SCALE_FACTOR);
+                CallbackBridge.mouseY = (event.getY(mouseCursorIndex) * LauncherPreferences.PREF_SCALE_FACTOR);
                 CallbackBridge.sendCursorPos(CallbackBridge.mouseX, CallbackBridge.mouseY);
                 return true;
             case MotionEvent.ACTION_SCROLL:
@@ -337,12 +335,11 @@ public class MinecraftGLSurface extends View implements GrabListener {
             post(this::refreshSize);
             return;
         }
-        mScaleFactor = LauncherPreferences.PREF_SCALE_FACTOR/100f;
         // Use the width and height of the View instead of display dimensions to avoid
         // getting squiched/stretched due to inconsistencies between the layout and
         // screen dimensions.
-        windowWidth = Tools.getDisplayFriendlyRes(getWidth(), mScaleFactor);
-        windowHeight = Tools.getDisplayFriendlyRes(getHeight(), mScaleFactor);
+        windowWidth = Tools.getDisplayFriendlyRes(getWidth(), LauncherPreferences.PREF_SCALE_FACTOR);
+        windowHeight = Tools.getDisplayFriendlyRes(getHeight(), LauncherPreferences.PREF_SCALE_FACTOR);
         if(mSurface == null){
             Log.w("MGLSurface", "Attempt to refresh size on null surface");
             return;

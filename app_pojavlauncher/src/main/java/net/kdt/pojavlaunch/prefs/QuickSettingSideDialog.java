@@ -35,8 +35,8 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
     private TextView mGyroSensitivityText, mGyroSensitivityDisplayText, mMouseSpeedText, mGestureDelayText, mGestureDelayDisplayText, mResolutionText;
 
     private boolean mOriginalGyroEnabled, mOriginalGyroXEnabled, mOriginalGyroYEnabled, mOriginalGestureDisabled;
-    private float mOriginalGyroSensitivity, mOriginalMouseSpeed;
-    private int mOriginalGestureDelay, mOriginalResolution;
+    private float mOriginalGyroSensitivity, mOriginalMouseSpeed, mOriginalResolution;
+    private int mOriginalGestureDelay;
 
     public QuickSettingSideDialog(Context context, ViewGroup parent) {
         super(context, parent, R.layout.dialog_quick_setting);
@@ -149,12 +149,12 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
         mResolutionBar.setRange(25, 100);
         mResolutionBar.setIncrement(5);
         mResolutionBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
-            PREF_SCALE_FACTOR = progress;
+            PREF_SCALE_FACTOR = progress/100f;
             LauncherPreferences.DEFAULT_PREF.edit().putInt("resolutionRatio", progress).apply();
             mResolutionText.setText(progress + "%");
             onResolutionChanged();
         });
-        mResolutionBar.setProgress(mOriginalResolution);
+        mResolutionBar.setProgress((int) (mOriginalResolution * 100));
 
 
         updateGyroVisibility(mOriginalGyroEnabled);

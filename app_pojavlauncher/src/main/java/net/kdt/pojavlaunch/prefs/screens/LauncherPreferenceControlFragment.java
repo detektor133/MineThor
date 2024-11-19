@@ -19,7 +19,7 @@ public class LauncherPreferenceControlFragment extends LauncherPreferenceFragmen
         // Get values
         int longPressTrigger = LauncherPreferences.PREF_LONGPRESS_TRIGGER;
         int prefButtonSize = (int) LauncherPreferences.PREF_BUTTONSIZE;
-        int mouseScale = (int) LauncherPreferences.PREF_MOUSESCALE;
+        int mouseScale = (int) LauncherPreferences.PREF_MOUSESCALE * 100;
         int gyroSampleRate = LauncherPreferences.PREF_GYRO_SAMPLE_RATE;
         float mouseSpeed = LauncherPreferences.PREF_MOUSESPEED;
         float gyroSpeed = LauncherPreferences.PREF_GYRO_SENSITIVITY;

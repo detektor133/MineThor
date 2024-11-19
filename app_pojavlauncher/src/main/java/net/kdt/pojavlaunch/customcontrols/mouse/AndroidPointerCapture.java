@@ -10,6 +10,7 @@ import androidx.annotation.RequiresApi;
 
 import net.kdt.pojavlaunch.MinecraftGLSurface;
 import net.kdt.pojavlaunch.Tools;
+import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 
 import org.lwjgl.glfw.CallbackBridge;
 
@@ -18,7 +19,6 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
     private static final float TOUCHPAD_SCROLL_THRESHOLD = 1;
     private final AbstractTouchpad mTouchpad;
     private final View mHostView;
-    private final float mScaleFactor;
     private final float mMousePrescale = Tools.dpToPx(1);
     private final PointerTracker mPointerTracker = new PointerTracker();
     private final Scroller mScroller = new Scroller(TOUCHPAD_SCROLL_THRESHOLD);
@@ -27,8 +27,7 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
     private int mInputDeviceIdentifier;
     private boolean mDeviceSupportsRelativeAxis;
 
-    public AndroidPointerCapture(AbstractTouchpad touchpad, View hostView, float scaleFactor) {
-        this.mScaleFactor = scaleFactor;
+    public AndroidPointerCapture(AbstractTouchpad touchpad, View hostView) {
         this.mTouchpad = touchpad;
         this.mHostView = hostView;
         hostView.setOnCapturedPointerListener(this);
@@ -86,8 +85,8 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
             }
         } else {
             // Position is updated by many events, hence it is send regardless of the event value
-            CallbackBridge.mouseX += (mVector[0] * mScaleFactor);
-            CallbackBridge.mouseY += (mVector[1] * mScaleFactor);
+            CallbackBridge.mouseX += (mVector[0] * LauncherPreferences.PREF_SCALE_FACTOR);
+            CallbackBridge.mouseY += (mVector[1] * LauncherPreferences.PREF_SCALE_FACTOR);
             CallbackBridge.sendCursorPos(CallbackBridge.mouseX, CallbackBridge.mouseY);
         }
 

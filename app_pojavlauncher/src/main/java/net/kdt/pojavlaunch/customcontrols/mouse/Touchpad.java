@@ -93,8 +93,8 @@ public class Touchpad extends View implements GrabListener, AbstractTouchpad {
         assert mMousePointerDrawable != null;
         mMousePointerDrawable.setBounds(
                 0, 0,
-                (int) (36 / 100f * LauncherPreferences.PREF_MOUSESCALE),
-                (int) (54 / 100f * LauncherPreferences.PREF_MOUSESCALE)
+                (int) (36 * LauncherPreferences.PREF_MOUSESCALE),
+                (int) (54 * LauncherPreferences.PREF_MOUSESCALE)
         );
         setFocusable(false);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

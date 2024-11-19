@@ -89,8 +89,8 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
         mMousePointerImageView.post(() -> {
             ViewGroup.LayoutParams params = mMousePointerImageView.getLayoutParams();
-            params.width = (int) (36 / 100f * LauncherPreferences.PREF_MOUSESCALE);
-            params.height = (int) (54 / 100f * LauncherPreferences.PREF_MOUSESCALE);
+            params.width = (int) (36 * LauncherPreferences.PREF_MOUSESCALE);
+            params.height = (int) (54 * LauncherPreferences.PREF_MOUSESCALE);
         });
 
         mTouchPad.setOnTouchListener(new View.OnTouchListener() {
