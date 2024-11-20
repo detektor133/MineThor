@@ -41,21 +41,20 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
     public QuickSettingSideDialog(Context context, ViewGroup parent) {
         super(context, parent, R.layout.dialog_quick_setting);
         setTitle(R.string.quick_setting_title);
-        bindLayout();
         setupCancelButton();
     }
 
     @Override
-    public boolean appear(boolean fromRight) {
-        boolean hasChanged = super.appear(fromRight);
-        if (hasChanged) setupListeners();
-        return hasChanged;
+    protected void onAppear(boolean hasBuilt) {
+        if (hasBuilt) {
+            bindLayout();
+            setupListeners();
+        }
     }
 
     @Override
-    public void disappear() {
-        super.disappear();
-        removeListeners();
+    protected void onDisappear(boolean willDestroy) {
+        if (willDestroy) removeListeners();
     }
 
     private void bindLayout() {
@@ -192,7 +191,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
 
     private void setupCancelButton() {
         setStartButtonListener(android.R.string.cancel, v -> cancel());
-        setEndButtonListener(android.R.string.ok, v -> disappear());
+        setEndButtonListener(android.R.string.ok, v -> disappear(true));
     }
 
     /** Resets all settings to their original values */
@@ -213,7 +212,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
             onResolutionChanged();
         }
 
-        disappear();
+        disappear(true);
     }
 
     /** Called when the resolution is changed. Use {@link LauncherPreferences#PREF_SCALE_FACTOR} */

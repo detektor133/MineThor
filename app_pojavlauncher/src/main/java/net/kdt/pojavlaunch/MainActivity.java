@@ -406,7 +406,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
                 }
             };
         }
-        Tools.runOnUiThread(() -> mQuickSettingSideDialog.appear(true));
+        mQuickSettingSideDialog.appear(true);
     }
 
     public static void toggleMouse(Context ctx) {
