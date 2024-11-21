@@ -135,7 +135,7 @@ public class EditControlSideDialog extends SideDialogView<ConstraintLayout> {
 
         // Adjust the color selector to have the same size as the control settings
         ViewGroup.LayoutParams params = mColorSelector.getRootView().getLayoutParams();
-        params.height = mDialogContent.getHeight();
+        params.height = ((ViewGroup)mDialogContent.getParent()).getHeight();
         mColorSelector.getRootView().setLayoutParams(params);
 
         mDisplayingColor = true;
