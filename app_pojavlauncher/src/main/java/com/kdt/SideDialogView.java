@@ -28,15 +28,14 @@ import net.kdt.pojavlaunch.Tools;
 /**
  * The base class for side dialog views
  * A side dialog is a dialog appearing from one side of the screen
- * @param <T> The type of the content view root
  */
-public abstract class SideDialogView<T extends View> {
+public abstract class SideDialogView {
 
     private final ViewGroup mParent;
     private final @LayoutRes int mLayoutId;
     private ViewGroup mDialogLayout;
     private DefocusableScrollView mScrollView;
-    protected T mDialogContent;
+    protected View mDialogContent;
 
     protected final int mMargin;
     private ObjectAnimator mSideDialogAnimator;
@@ -103,7 +102,7 @@ public abstract class SideDialogView<T extends View> {
         mTitleDivider = mDialogLayout.findViewById(R.id.side_dialog_title_divider);
 
         LayoutInflater.from(mParent.getContext()).inflate(mLayoutId, mScrollView, true);
-        mDialogContent = (T) mScrollView.getChildAt(0);
+        mDialogContent = mScrollView.getChildAt(0);
 
         // Attach layouts
         mParent.addView(mDialogLayout);

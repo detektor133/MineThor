@@ -40,7 +40,7 @@ import net.kdt.pojavlaunch.utils.interfaces.SimpleTextWatcher;
 
 import java.util.List;
 
-public class EditControlSideDialog extends SideDialogView<ConstraintLayout> {
+public class EditControlSideDialog extends SideDialogView {
 
     private final Spinner[] mKeycodeSpinners = new Spinner[4];
     public boolean internalChanges = false; // True when we programmatically change stuff.
@@ -326,8 +326,8 @@ public class EditControlSideDialog extends SideDialogView<ConstraintLayout> {
     }
 
     private void setDefaultVisibilitySetting() {
-        for (int i = 0; i < mDialogContent.getChildCount(); ++i) {
-            mDialogContent.getChildAt(i).setVisibility(VISIBLE);
+        for (int i = 0; i < ((ViewGroup)mDialogContent).getChildCount(); ++i) {
+            ((ViewGroup)mDialogContent).getChildAt(i).setVisibility(VISIBLE);
         }
         for(Spinner s : mKeycodeSpinners) {
             s.setVisibility(View.INVISIBLE);
