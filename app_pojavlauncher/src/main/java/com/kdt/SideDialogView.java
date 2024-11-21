@@ -4,7 +4,6 @@ import static net.kdt.pojavlaunch.Tools.currentDisplayMetrics;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
-import android.util.AttributeSet;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,19 +13,17 @@ import android.widget.Button;
 import android.widget.TextView;
 
 import androidx.annotation.CallSuper;
-import androidx.annotation.IntegerRes;
 import androidx.annotation.LayoutRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.content.res.ResourcesCompat;
 
 import net.kdt.pojavlaunch.R;
 
 public class SideDialogView<T extends View> {
 
-    private final ConstraintLayout mDialogLayout;
+    private final ViewGroup mDialogLayout;
     private final DefocusableScrollView mScrollView;
     protected final T mDialogContent;
     private final int mMargin;
@@ -39,7 +36,7 @@ public class SideDialogView<T extends View> {
 
     public SideDialogView(Context context, ViewGroup parent, @LayoutRes int layoutId) {
         // Inflate layouts
-        mDialogLayout = (ConstraintLayout) LayoutInflater.from(context).inflate(R.layout.dialog_side_dialog, parent, false);
+        mDialogLayout = (ViewGroup) LayoutInflater.from(context).inflate(R.layout.dialog_side_dialog, parent, false);
         mScrollView = mDialogLayout.findViewById(R.id.side_dialog_scrollview);
         mStartButton = mDialogLayout.findViewById(R.id.side_dialog_start_button);
         mEndButton = mDialogLayout.findViewById(R.id.side_dialog_end_button);
