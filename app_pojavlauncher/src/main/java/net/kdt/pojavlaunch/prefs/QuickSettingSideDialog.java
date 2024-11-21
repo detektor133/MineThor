@@ -11,6 +11,7 @@ import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_SCALE_FACTOR;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Switch;
@@ -21,6 +22,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import com.kdt.CustomSeekbar;
 
 import net.kdt.pojavlaunch.R;
+import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.utils.interfaces.SimpleSeekBarListener;
 
 /**
@@ -29,6 +31,7 @@ import net.kdt.pojavlaunch.utils.interfaces.SimpleSeekBarListener;
  */
 public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<ConstraintLayout> {
 
+    private SharedPreferences.Editor mEditor;
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     private Switch mGyroSwitch, mGyroXSwitch, mGyroYSwitch, mGestureSwitch;
     private CustomSeekbar mGyroSensitivityBar, mMouseSpeedBar, mGestureDelayBar, mResolutionBar;
@@ -48,7 +51,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
     protected void onAppear(boolean hasBuilt) {
         if (hasBuilt) {
             bindLayout();
-            setupListeners();
+            Tools.runOnUiThread(this::setupListeners);
         }
     }
 
@@ -78,6 +81,8 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
     }
 
     private void setupListeners() {
+        mEditor = LauncherPreferences.DEFAULT_PREF.edit();
+
         mOriginalGyroEnabled = PREF_ENABLE_GYRO;
         mOriginalGyroXEnabled = PREF_GYRO_INVERT_X;
         mOriginalGyroYEnabled = PREF_GYRO_INVERT_Y;
@@ -97,32 +102,32 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
             PREF_ENABLE_GYRO = isChecked;
             onGyroStateChanged();
             updateGyroVisibility(isChecked);
-            LauncherPreferences.DEFAULT_PREF.edit().putBoolean("enableGyro", isChecked).apply();
+            mEditor.putBoolean("enableGyro", isChecked);
         });
 
         mGyroXSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             PREF_GYRO_INVERT_X = isChecked;
             onGyroStateChanged();
-            LauncherPreferences.DEFAULT_PREF.edit().putBoolean("gyroInvertX", isChecked).apply();
+            mEditor.putBoolean("gyroInvertX", isChecked);
         });
 
         mGyroYSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             PREF_GYRO_INVERT_Y = isChecked;
             onGyroStateChanged();
-            LauncherPreferences.DEFAULT_PREF.edit().putBoolean("gyroInvertY", isChecked).apply();
+            mEditor.putBoolean("gyroInvertY", isChecked);
         });
 
         mGestureSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             PREF_DISABLE_GESTURES = isChecked;
             updateGestureVisibility(isChecked);
-            LauncherPreferences.DEFAULT_PREF.edit().putBoolean("disableGestures", isChecked).apply();
+            mEditor.putBoolean("disableGestures", isChecked);
         });
 
         mGyroSensitivityBar.setRange(25, 300);
         mGyroSensitivityBar.setIncrement(5);
         mGyroSensitivityBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_GYRO_SENSITIVITY = progress / 100f;
-            LauncherPreferences.DEFAULT_PREF.edit().putInt("gyroSensitivity", progress).apply();
+            mEditor.putInt("gyroSensitivity", progress);
             mGyroSensitivityText.setText(progress + "%");
         });
         mGyroSensitivityBar.setProgress((int) (mOriginalGyroSensitivity * 100f));
@@ -131,7 +136,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
         mMouseSpeedBar.setIncrement(5);
         mMouseSpeedBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_MOUSESPEED = progress / 100f;
-            LauncherPreferences.DEFAULT_PREF.edit().putInt("mousespeed", progress).apply();
+            mEditor.putInt("mousespeed", progress);
             mMouseSpeedText.setText(progress + "%");
         });
         mMouseSpeedBar.setProgress((int) (mOriginalMouseSpeed * 100f));
@@ -140,7 +145,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
         mGestureDelayBar.setIncrement(10);
         mGestureDelayBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_LONGPRESS_TRIGGER = progress;
-            LauncherPreferences.DEFAULT_PREF.edit().putInt("timeLongPressTrigger", progress).apply();
+            mEditor.putInt("timeLongPressTrigger", progress);
             mGestureDelayText.setText(progress + "ms");
         });
         mGestureDelayBar.setProgress(mOriginalGestureDelay);
@@ -149,7 +154,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
         mResolutionBar.setIncrement(5);
         mResolutionBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_SCALE_FACTOR = progress/100f;
-            LauncherPreferences.DEFAULT_PREF.edit().putInt("resolutionRatio", progress).apply();
+            mEditor.putInt("resolutionRatio", progress);
             mResolutionText.setText(progress + "%");
             onResolutionChanged();
         });
@@ -191,7 +196,10 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView<Cons
 
     private void setupCancelButton() {
         setStartButtonListener(android.R.string.cancel, v -> cancel());
-        setEndButtonListener(android.R.string.ok, v -> disappear(true));
+        setEndButtonListener(android.R.string.ok, v -> {
+            mEditor.apply();
+            disappear(true);
+        });
     }
 
     /** Resets all settings to their original values */

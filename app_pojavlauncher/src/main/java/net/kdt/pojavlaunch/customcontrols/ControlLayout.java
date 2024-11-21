@@ -422,7 +422,7 @@ public class ControlLayout extends FrameLayout {
 		imm.hideSoftInputFromWindow(getWindowToken(), 0);
 		if(mControlDialog != null) {
 			mControlDialog.disappearColor();
-			mControlDialog.disappear(false);
+			mControlDialog.disappear(true);
 		}
 
 		if(mActionRow != null) mActionRow.setFollowedButton(null);

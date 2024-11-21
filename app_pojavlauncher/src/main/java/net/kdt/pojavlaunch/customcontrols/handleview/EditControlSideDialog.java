@@ -103,7 +103,9 @@ public class EditControlSideDialog extends SideDialogView<ConstraintLayout> {
 
     @Override
     protected void onDisappear(boolean willDestroy) {
-
+        if (willDestroy) {
+            mParent.removeView(mColorSelector.getRootView());
+        }
     }
 
     /* While the selector could be retrofitted to side dialog, it's not worth the effort */
