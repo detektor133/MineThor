@@ -149,17 +149,16 @@ public abstract class SideDialogView {
 
     /**
      * Slide the layout into the visible screen area
-     * @return Whether the layout position has changed
      */
     @CallSuper
     public final void appear(boolean fromRight) {
-        boolean willBuild = !mIsInstantiated;
         if (!mIsInstantiated) {
             inflateLayout();
+            onInflate();
         }
 
         // To avoid UI sizing issue when the dialog is not fully inflated
-        onAppear(willBuild);
+        onAppear();
         Tools.runOnUiThread(() -> {
             if (fromRight) {
                 if (!mDisplaying || !isAtRight()) {
@@ -190,7 +189,8 @@ public abstract class SideDialogView {
     public final void disappear(boolean destroy) {
         if (!mDisplaying) {
             if(destroy) {
-                onDisappear(true);
+                onDisappear();
+                onDestroy();
                 deflateLayout();
             }
             return;
@@ -203,7 +203,8 @@ public abstract class SideDialogView {
             mSideDialogAnimator.setFloatValues(mMargin, -mDialogLayout.getWidth());
 
         if(destroy) {
-            onDisappear(true);
+            onDisappear();
+            onDestroy();
             mSideDialogAnimator.addListener(new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
@@ -222,16 +223,25 @@ public abstract class SideDialogView {
     }
 
     /**
-     * Called after the dialog has appeared with an inflated layout
-     * @param hasBuilt Whether the layout has JUST been built. If false, the layout has been built before
+     * Called when the dialog is inflated, ideal for setting up UI elements bindings
      */
-    protected abstract void onAppear(boolean hasBuilt);
+    protected void onInflate() {}
+
+    /**
+     * Called after the dialog has appeared
+     */
+    protected void onAppear() {}
 
     /**
      * Called after the dialog has disappeared
-     * @param willDestroy Whether the dialog will be destroyed after disappearing
      */
-    protected abstract void onDisappear(boolean willDestroy);
+    protected void onDisappear() {}
+
+    /**
+     * Called before the dialog gets destroyed (removing views from parent)
+     * Ideal for cleaning up resources
+     */
+    protected void onDestroy() {}
 
 
 }

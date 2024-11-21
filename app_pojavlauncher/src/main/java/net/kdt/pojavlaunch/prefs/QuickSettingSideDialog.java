@@ -48,16 +48,14 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
     }
 
     @Override
-    protected void onAppear(boolean hasBuilt) {
-        if (hasBuilt) {
-            bindLayout();
-            Tools.runOnUiThread(this::setupListeners);
-        }
+    protected void onInflate() {
+        bindLayout();
+        Tools.runOnUiThread(this::setupListeners);
     }
 
     @Override
-    protected void onDisappear(boolean willDestroy) {
-        if (willDestroy) removeListeners();
+    protected void onDestroy() {
+        removeListeners();
     }
 
     private void bindLayout() {

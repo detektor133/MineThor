@@ -91,21 +91,16 @@ public class EditControlSideDialog extends SideDialogView {
     }
 
     @Override
-    protected void onAppear(boolean hasBuilt) {
-        if(hasBuilt) {
-            bindLayout();
-            buildColorSelector();
-
-            loadAdapter();
-            setupRealTimeListeners();
-        }
+    protected void onInflate() {
+        bindLayout();
+        buildColorSelector();
+        loadAdapter();
+        setupRealTimeListeners();
     }
 
     @Override
-    protected void onDisappear(boolean willDestroy) {
-        if (willDestroy) {
-            mParent.removeView(mColorSelector.getRootView());
-        }
+    protected void onDestroy() {
+        mParent.removeView(mColorSelector.getRootView());
     }
 
     /* While the selector could be retrofitted to side dialog, it's not worth the effort */
