@@ -38,9 +38,9 @@ public abstract class SideDialogView<T extends View> {
     private DefocusableScrollView mScrollView;
     protected T mDialogContent;
 
-    private final int mMargin;
+    protected final int mMargin;
     private ObjectAnimator mSideDialogAnimator;
-    private boolean mDisplaying = false;
+    protected boolean mDisplaying = false;
     /* Whether the layout is built */
     private boolean mIsInstantiated = false;
 
@@ -160,25 +160,25 @@ public abstract class SideDialogView<T extends View> {
         }
 
         // To avoid UI sizing issue when the dialog is not fully inflated
+        onAppear(willBuild);
         Tools.runOnUiThread(() -> {
-            onAppear(willBuild);
-
             if (fromRight) {
                 if (!mDisplaying || !isAtRight()) {
                     mSideDialogAnimator.setFloatValues(currentDisplayMetrics.widthPixels, currentDisplayMetrics.widthPixels - mScrollView.getWidth() - mMargin);
                     mSideDialogAnimator.start();
+                    mDisplaying = true;
                 }
             } else {
                 if (!mDisplaying || isAtRight()) {
                     mSideDialogAnimator.setFloatValues(-mDialogLayout.getWidth(), mMargin);
                     mSideDialogAnimator.start();
+                    mDisplaying = true;
                 }
             }
         });
-        mDisplaying = true;
     }
 
-    private boolean isAtRight() {
+    protected final boolean isAtRight() {
         return mDialogLayout.getX() > currentDisplayMetrics.widthPixels / 2f;
     }
 

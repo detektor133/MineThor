@@ -1,4 +1,4 @@
-package net.kdt.pojavlaunch.utils;
+package net.kdt.pojavlaunch.utils.interfaces;
 
 import android.widget.SeekBar;
 

@@ -21,7 +21,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import com.kdt.CustomSeekbar;
 
 import net.kdt.pojavlaunch.R;
-import net.kdt.pojavlaunch.utils.SimpleSeekBarListener;
+import net.kdt.pojavlaunch.utils.interfaces.SimpleSeekBarListener;
 
 /**
  * Side dialog for quick settings that you can change in game

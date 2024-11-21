@@ -20,7 +20,7 @@ import net.kdt.pojavlaunch.MainActivity;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.customcontrols.ControlData;
 import net.kdt.pojavlaunch.customcontrols.ControlLayout;
-import net.kdt.pojavlaunch.customcontrols.handleview.EditControlPopup;
+import net.kdt.pojavlaunch.customcontrols.handleview.EditControlSideDialog;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 
 import org.lwjgl.glfw.CallbackBridge;
@@ -89,7 +89,7 @@ public class ControlButton extends TextView implements ControlInterface {
     }
 
 
-    public void loadEditValues(EditControlPopup editControlPopup){
+    public void loadEditValues(EditControlSideDialog editControlPopup){
         editControlPopup.loadValues(getProperties());
     }
 
