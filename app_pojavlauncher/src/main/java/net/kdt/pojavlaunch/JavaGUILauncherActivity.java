@@ -177,7 +177,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         getOnBackPressedDispatcher().addCallback(new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                MainActivity.dialogForceClose(JavaGUILauncherActivity.this);
+                Tools.dialogForceClose(JavaGUILauncherActivity.this);
             }
         });
     }
@@ -336,7 +336,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
     }
 
     public void forceClose(View v) {
-        MainActivity.dialogForceClose(this);
+        Tools.dialogForceClose(this);
     }
 
     public void openLogOutput(View v) {

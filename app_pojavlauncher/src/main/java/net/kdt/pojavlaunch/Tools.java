@@ -1292,4 +1292,17 @@ public final class Tools {
         return ((SensorManager)context.getSystemService(Context.SENSOR_SERVICE)).getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null;
 
     }
+
+    public static void dialogForceClose(Context ctx) {
+        new android.app.AlertDialog.Builder(ctx)
+                .setMessage(R.string.mcn_exit_confirm)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (p1, p2) -> {
+                    try {
+                        Tools.fullyExit();
+                    } catch (Throwable th) {
+                        Log.w(Tools.APP_NAME, "Could not enable System.exit() method!", th);
+                    }
+                }).show();
+    }
 }
