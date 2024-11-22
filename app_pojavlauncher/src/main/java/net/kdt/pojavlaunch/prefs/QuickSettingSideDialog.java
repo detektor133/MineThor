@@ -17,8 +17,6 @@ import android.view.ViewGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import androidx.constraintlayout.widget.ConstraintLayout;
-
 import com.kdt.CustomSeekbar;
 
 import net.kdt.pojavlaunch.R;
@@ -126,41 +124,57 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         mGyroSensitivityBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_GYRO_SENSITIVITY = progress / 100f;
             mEditor.putInt("gyroSensitivity", progress);
-            mGyroSensitivityText.setText(progress + "%");
+            setSeekTextPercent(mGyroSensitivityText, progress);
         });
         mGyroSensitivityBar.setProgress((int) (mOriginalGyroSensitivity * 100f));
+        setSeekTextPercent(mGyroSensitivityText, mGyroSensitivityBar.getProgress());
 
         mMouseSpeedBar.setRange(25, 300);
         mMouseSpeedBar.setIncrement(5);
         mMouseSpeedBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_MOUSESPEED = progress / 100f;
             mEditor.putInt("mousespeed", progress);
-            mMouseSpeedText.setText(progress + "%");
+            setSeekTextPercent(mMouseSpeedText, progress);
         });
         mMouseSpeedBar.setProgress((int) (mOriginalMouseSpeed * 100f));
+        setSeekTextPercent(mMouseSpeedText, mMouseSpeedBar.getProgress());
 
         mGestureDelayBar.setRange(100, 1000);
         mGestureDelayBar.setIncrement(10);
         mGestureDelayBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_LONGPRESS_TRIGGER = progress;
             mEditor.putInt("timeLongPressTrigger", progress);
-            mGestureDelayText.setText(progress + "ms");
+            setSeekTextMillisecond(mGestureDelayText, progress);
         });
         mGestureDelayBar.setProgress(mOriginalGestureDelay);
+        setSeekTextMillisecond(mGestureDelayText, mGestureDelayBar.getProgress());
 
         mResolutionBar.setRange(25, 100);
         mResolutionBar.setIncrement(5);
         mResolutionBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_SCALE_FACTOR = progress/100f;
             mEditor.putInt("resolutionRatio", progress);
-            mResolutionText.setText(progress + "%");
+            setSeekTextPercent(mResolutionText, progress);
             onResolutionChanged();
         });
         mResolutionBar.setProgress((int) (mOriginalResolution * 100));
+        setSeekTextPercent(mResolutionText, mResolutionBar.getProgress());
 
 
         updateGyroVisibility(mOriginalGyroEnabled);
         updateGestureVisibility(mOriginalGestureDisabled);
+    }
+
+    private static void setSeekTextMillisecond(TextView target, int value) {
+        setSeekText(target, R.string.millisecond_format, value);
+    }
+
+    private static void setSeekTextPercent(TextView target, int value) {
+        setSeekText(target, R.string.percent_format, value);
+    }
+
+    private static void setSeekText(TextView target, int format, int value) {
+        target.setText(target.getContext().getString(format, value));
     }
 
     private void updateGyroVisibility(boolean isEnabled) {
