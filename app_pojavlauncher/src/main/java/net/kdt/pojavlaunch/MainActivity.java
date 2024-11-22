@@ -277,7 +277,9 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         if (CallbackBridge.isGrabbing()){
             sendKeyPress(LwjglGlfwKeycode.GLFW_KEY_ESCAPE);
         }
-        mQuickSettingSideDialog.cancel();
+        if(mQuickSettingSideDialog != null) {
+            mQuickSettingSideDialog.cancel();
+        }
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_HOVERED, 0);
         super.onPause();
     }
