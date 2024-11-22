@@ -160,6 +160,8 @@ void pojavStartPumping() {
     if(pojav_environ->shouldUpdateMonitorSize) {
         // Perform a monitor size update here to avoid doing it on every single window
         updateMonitorSize(pojav_environ->savedWidth, pojav_environ->savedHeight);
+        // Mark the monitor size as consumed (since GLFW was made aware of it)
+        pojav_environ->monitorSizeConsumed = true;
     }
 }
 
@@ -171,7 +173,14 @@ void pojavStopPumping() {
     atomic_fetch_sub_explicit(&pojav_environ->eventCounter, pojav_environ->inEventCount, memory_order_acquire);
     // Make sure the next frame won't send mouse or monitor updates if it's unnecessary
     pojav_environ->shouldUpdateMouse = false;
-    pojav_environ->shouldUpdateMonitorSize = false;
+    // Only reset the update flag if the monitor size was consumed by pojavStartPumping. This
+    // will delay the update to next frame if it had occured between pojavStartPumping and pojavStopPumping,
+    // but it's better than not having it apply at all
+    if(pojav_environ->shouldUpdateMonitorSize && pojav_environ->monitorSizeConsumed) {
+        pojav_environ->shouldUpdateMonitorSize = false;
+        pojav_environ->monitorSizeConsumed = false;
+    }
+
 }
 
 JNIEXPORT void JNICALL
@@ -502,6 +511,10 @@ void noncritical_send_mouse_button(__attribute__((unused)) JNIEnv* env, __attrib
 void critical_send_screen_size(jint width, jint height) {
     pojav_environ->savedWidth = width;
     pojav_environ->savedHeight = height;
+    // Even if there was call to pojavStartPumping that consumed the size, this call
+    // might happen right after it (or right before pojavStopPumping)
+    // So unmark the size as "consumed"
+    pojav_environ->monitorSizeConsumed = false;
     pojav_environ->shouldUpdateMonitorSize = true;
     // Don't use the direct updates  for screen dimensions.
     // This is done to ensure that we have predictable conditions to correctly call
