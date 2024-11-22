@@ -5,14 +5,12 @@ import static android.view.View.VISIBLE;
 
 import static net.kdt.pojavlaunch.Tools.currentDisplayMetrics;
 
-import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -20,8 +18,6 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
-
-import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.kdt.SideDialogView;
 
@@ -82,8 +78,6 @@ public class EditControlSideDialog extends SideDialogView {
     // Color selector related stuff
     private ColorSelector mColorSelector;
     private final ViewGroup mParent;
-    private boolean mDisplayingColor = false;
-    private ObjectAnimator mColorEditorAnimator;
 
     public EditControlSideDialog(Context context, ViewGroup parent) {
         super(context, parent, R.layout.dialog_control_button_setting);
@@ -100,58 +94,25 @@ public class EditControlSideDialog extends SideDialogView {
 
     @Override
     protected void onDestroy() {
-        mParent.removeView(mColorSelector.getRootView());
+        mColorSelector.disappear(true);
     }
 
-    /* While the selector could be retrofitted to side dialog, it's not worth the effort */
     private void buildColorSelector() {
         mColorSelector = new ColorSelector(mParent.getContext(), mParent, null);
-        mColorSelector.getRootView().setElevation(11);
-        mColorSelector.getRootView().setTranslationZ(11);
-        mColorSelector.getRootView().setX(-mParent.getResources().getDimensionPixelOffset(R.dimen._280sdp));
-
-        mColorEditorAnimator = ObjectAnimator.ofFloat(mColorSelector.getRootView(), "x", 0).setDuration(600);
-        mColorEditorAnimator.setInterpolator(new AccelerateDecelerateInterpolator());
     }
 
     /**
      * Slide the layout into the visible screen area
      */
     public void appearColor(boolean fromRight, int color) {
-        if (fromRight) {
-            if (!mDisplayingColor || !isAtRightColor()) {
-                mColorEditorAnimator.setFloatValues(currentDisplayMetrics.widthPixels, currentDisplayMetrics.widthPixels - mDialogContent.getWidth() - mMargin);
-                mColorEditorAnimator.start();
-            }
-        } else {
-            if (!mDisplayingColor || isAtRightColor()) {
-                mColorEditorAnimator.setFloatValues(-mDialogContent.getWidth(), mMargin);
-                mColorEditorAnimator.start();
-            }
-        }
-
-        // Adjust the color selector to have the same size as the control settings
-        ViewGroup.LayoutParams params = mColorSelector.getRootView().getLayoutParams();
-        params.height = ((ViewGroup)mDialogContent.getParent()).getHeight();
-        mColorSelector.getRootView().setLayoutParams(params);
-
-        mDisplayingColor = true;
-        mColorSelector.show(color == -1 ? Color.WHITE : color);
+        mColorSelector.show(fromRight, color == -1 ? Color.WHITE : color);
     }
 
     /**
      * Slide out the layout
      */
     public void disappearColor() {
-        if (!mDisplayingColor) return;
-
-        mDisplayingColor = false;
-        if (isAtRight())
-            mColorEditorAnimator.setFloatValues(currentDisplayMetrics.widthPixels - mDialogContent.getWidth() - mMargin, currentDisplayMetrics.widthPixels);
-        else
-            mColorEditorAnimator.setFloatValues(mMargin, -mDialogContent.getWidth());
-
-        mColorEditorAnimator.start();
+        mColorSelector.disappear(false);
     }
 
     /**
@@ -160,7 +121,7 @@ public class EditControlSideDialog extends SideDialogView {
      * @return True if the last layer is disappearing
      */
     public boolean disappearLayer() {
-        if (mDisplayingColor) {
+        if (mColorSelector.isDisplaying()) {
             disappearColor();
             return false;
         } else {
@@ -176,7 +137,7 @@ public class EditControlSideDialog extends SideDialogView {
         if (mDisplaying) {
             boolean isAtRight = mCurrentlyEditedButton.getControlView().getX() + mCurrentlyEditedButton.getControlView().getWidth() / 2f < currentDisplayMetrics.widthPixels / 2f;
             appear(isAtRight);
-            if (mDisplayingColor) {
+            if (mColorSelector.isDisplaying()) {
                 Tools.runOnUiThread(() -> appearColor(isAtRight, mCurrentlyEditedButton.getProperties().bgColor));
             }
         }
@@ -513,10 +474,6 @@ public class EditControlSideDialog extends SideDialogView {
             Log.e("EditControlPopup", e.toString());
         }
         return out;
-    }
-
-    private boolean isAtRightColor() {
-        return mColorSelector.getRootView().getX() > currentDisplayMetrics.widthPixels / 2f;
     }
 
     public void setCurrentlyEditedButton(ControlInterface button) {

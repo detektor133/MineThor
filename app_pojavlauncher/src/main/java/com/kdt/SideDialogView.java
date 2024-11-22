@@ -11,7 +11,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.Interpolator;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -218,7 +217,7 @@ public abstract class SideDialogView {
     }
 
     /** @return Whether the dialog is currently displaying */
-    protected final boolean isDisplaying(){
+    public final boolean isDisplaying(){
         return mDisplaying;
     }
 
