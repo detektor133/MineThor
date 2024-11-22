@@ -6,7 +6,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.util.Log;
 import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.WindowManager;
@@ -81,7 +80,6 @@ public class GyroControl implements SensorEventListener, GrabListener {
         mCorrectionListener.disable();
         mStoredX = mStoredY = 0;
         resetDamper();
-        Log.i("GyroControl", "STOP");
         CallbackBridge.removeGrabListener(this);
     }
 
