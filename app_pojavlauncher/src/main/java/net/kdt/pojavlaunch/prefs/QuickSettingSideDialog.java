@@ -48,7 +48,10 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
     @Override
     protected void onInflate() {
         bindLayout();
-        Tools.runOnUiThread(this::setupListeners);
+        Tools.runOnUiThread(() -> {
+            this.setupListeners();
+            this.updateGyroCompatibility();
+        });
     }
 
     @Override
@@ -185,6 +188,14 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         mGyroSensitivityBar.setVisibility(visibility);
         mGyroSensitivityText.setVisibility(visibility);
         mGyroSensitivityDisplayText.setVisibility(visibility);
+    }
+
+    private void updateGyroCompatibility() {
+        boolean isGyroAvailable = Tools.deviceSupportsGyro(mDialogContent.getContext());
+        if (!isGyroAvailable) {
+            mGyroSwitch.setVisibility(View.GONE);
+            updateGestureVisibility(false);
+        }
     }
 
     private void updateGestureVisibility(boolean isDisabled) {

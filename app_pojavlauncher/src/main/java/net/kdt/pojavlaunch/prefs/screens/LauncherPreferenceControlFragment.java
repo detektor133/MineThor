@@ -9,6 +9,7 @@ import android.os.Bundle;
 import androidx.preference.PreferenceCategory;
 
 import net.kdt.pojavlaunch.R;
+import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.prefs.CustomSeekBarPreference;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 
@@ -62,7 +63,7 @@ public class LauncherPreferenceControlFragment extends LauncherPreferenceFragmen
 
         Context context = getContext();
         if(context != null) {
-            mGyroAvailable = ((SensorManager)context.getSystemService(Context.SENSOR_SERVICE)).getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null;
+            mGyroAvailable = Tools.deviceSupportsGyro(context);
         }
         PreferenceCategory gyroCategory =  requirePreference("gyroCategory",
                 PreferenceCategory.class);
