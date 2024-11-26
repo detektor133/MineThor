@@ -19,6 +19,8 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.Cursor;
+import android.hardware.Sensor;
+import android.hardware.SensorManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -31,6 +33,9 @@ import android.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -38,6 +43,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.NotificationManagerCompat;
@@ -506,10 +512,14 @@ public final class Tools {
         return displayMetrics;
     }
 
-    public static void setFullscreen(Activity activity, boolean fullscreen) {
+    @SuppressWarnings("deprecation")
+    private static void setFullscreenLegacy(Activity activity, boolean fullscreen) {
         final View decorView = activity.getWindow().getDecorView();
         View.OnSystemUiVisibilityChangeListener visibilityChangeListener = visibility -> {
-            if(fullscreen){
+            boolean multiWindowMode = SDK_INT >= 24 && activity.isInMultiWindowMode();
+            // When in multi-window mode, asking for fullscreen makes no sense (cause the launcher runs in a window)
+            // So, ignore the fullscreen setting when activity is in multi window mode
+            if(fullscreen && !multiWindowMode){
                 if ((visibility & View.SYSTEM_UI_FLAG_FULLSCREEN) == 0) {
                     decorView.setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                             | View.SYSTEM_UI_FLAG_FULLSCREEN
@@ -527,10 +537,66 @@ public final class Tools {
         visibilityChangeListener.onSystemUiVisibilityChange(decorView.getSystemUiVisibility()); //call it once since the UI state may not change after the call, so the activity wont become fullscreen
     }
 
+    @RequiresApi(Build.VERSION_CODES.R)
+    private static void setFullscreenSdk30(Activity activity, boolean fullscreen) {
+        final Window window = activity.getWindow();
+        final View decorView = window.getDecorView();
+        final int insetControllerFlags = WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars();
+        final View.OnApplyWindowInsetsListener windowInsetsListener = (view, windowInsets) ->{
+            WindowInsetsController windowInsetsController = decorView.getWindowInsetsController();
+            if(windowInsetsController == null) return windowInsets;
+            boolean multiWindowMode = activity.isInMultiWindowMode();
+            // Emulate the behaviour of the legacy function using the new flags
+            if(fullscreen && !multiWindowMode) {
+                windowInsetsController.hide(insetControllerFlags);
+                windowInsetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                window.setDecorFitsSystemWindows(false);
+            }else {
+                windowInsetsController.show(insetControllerFlags);
+                // Both of the constants below have the exact same numerical value, but
+                // for some reason the one that works below Android S was removed
+                // from the acceptable constants for setSystemBarsBehaviour
+                if (SDK_INT >= Build.VERSION_CODES.S) {
+                    windowInsetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_DEFAULT);
+                }else {
+                    // noinspection WrongConstant
+                    windowInsetsController.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_BARS_BY_SWIPE);
+                }
+                window.setDecorFitsSystemWindows(true);
+            }
+            return windowInsets;
+        };
+        decorView.setOnApplyWindowInsetsListener(windowInsetsListener);
+        windowInsetsListener.onApplyWindowInsets(decorView, null);
+    }
+
+    public static void setFullscreen(Activity activity, boolean fullscreen) {
+        if (SDK_INT >= Build.VERSION_CODES.R) {
+            setFullscreenSdk30(activity, fullscreen);
+        }else {
+            setFullscreenLegacy(activity, fullscreen);
+        }
+    }
+
     public static DisplayMetrics currentDisplayMetrics;
 
     public static void updateWindowSize(Activity activity) {
         currentDisplayMetrics = getDisplayMetrics(activity);
+
+        View dimensionView = activity.findViewById(R.id.dimension_tracker);
+
+        if(dimensionView != null) {
+            int width = dimensionView.getWidth();
+            int height = dimensionView.getHeight();
+            if(width != 0 && height != 0) {
+                Log.i("Tools", "Using dimension_tracker for display dimensions; W="+width+" H="+height);
+                CallbackBridge.physicalWidth = width;
+                CallbackBridge.physicalHeight = height;
+                return;
+            }else{
+                Log.e("Tools","Dimension tracker detected but dimensions out of date. Please check usage.", new Exception());
+            }
+        }
 
         CallbackBridge.physicalWidth = currentDisplayMetrics.widthPixels;
         CallbackBridge.physicalHeight = currentDisplayMetrics.heightPixels;
@@ -606,7 +672,7 @@ public final class Tools {
                     .setPositiveButton(android.R.string.ok, (p1, p2) -> {
                         if(exitIfOk) {
                             if (ctx instanceof MainActivity) {
-                                MainActivity.fullyExit();
+                                fullyExit();
                             } else if (ctx instanceof Activity) {
                                 ((Activity) ctx).finish();
                             }
@@ -618,7 +684,7 @@ public final class Tools {
                         mgr.setPrimaryClip(ClipData.newPlainText("error", printToString(e)));
                         if(exitIfOk) {
                             if (ctx instanceof MainActivity) {
-                                MainActivity.fullyExit();
+                                fullyExit();
                             } else {
                                 ((Activity) ctx).finish();
                             }
@@ -890,6 +956,24 @@ public final class Tools {
         File file = new File(nameOutput);
         DownloadUtils.downloadFile(urlInput, file);
     }
+
+    public static boolean isAndroid8OrHigher() {
+        return SDK_INT >= 26;
+    }
+
+    public static void fullyExit() {
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
+
+    public static void printLauncherInfo(String gameVersion, String javaArguments) {
+        Logger.appendToLog("Info: Launcher version: " + BuildConfig.VERSION_NAME);
+        Logger.appendToLog("Info: Architecture: " + Architecture.archAsString(DEVICE_ARCHITECTURE));
+        Logger.appendToLog("Info: Device model: " + Build.MANUFACTURER + " " +Build.MODEL);
+        Logger.appendToLog("Info: API version: " + SDK_INT);
+        Logger.appendToLog("Info: Selected Minecraft version: " + gameVersion);
+        Logger.appendToLog("Info: Custom Java arguments: \"" + javaArguments + "\"");
+    }
+
     public interface DownloaderFeedback {
         void updateProgress(int curr, int max);
     }
@@ -1242,5 +1326,23 @@ public final class Tools {
     public static void releaseRenderersCache() {
         sCompatibleRenderers = null;
         System.gc();
+    }
+
+    public static boolean deviceSupportsGyro(@NonNull Context context) {
+        return ((SensorManager)context.getSystemService(Context.SENSOR_SERVICE)).getDefaultSensor(Sensor.TYPE_GYROSCOPE) != null;
+
+    }
+
+    public static void dialogForceClose(Context ctx) {
+        new android.app.AlertDialog.Builder(ctx)
+                .setMessage(R.string.mcn_exit_confirm)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok, (p1, p2) -> {
+                    try {
+                        Tools.fullyExit();
+                    } catch (Throwable th) {
+                        Log.w(Tools.APP_NAME, "Could not enable System.exit() method!", th);
+                    }
+                }).show();
     }
 }
