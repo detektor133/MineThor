@@ -123,7 +123,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         });
 
         mGyroSensitivityBar.setRange(25, 300);
-        mGyroSensitivityBar.setIncrement(5);
+        mGyroSensitivityBar.setIncrement(mGyroSensitivityBar.getContext().getResources().getInteger(R.integer.gyro_speed_seekbar_increment));
         mGyroSensitivityBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_GYRO_SENSITIVITY = progress / 100f;
             mEditor.putInt("gyroSensitivity", progress);
@@ -133,7 +133,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         setSeekTextPercent(mGyroSensitivityText, mGyroSensitivityBar.getProgress());
 
         mMouseSpeedBar.setRange(25, 300);
-        mMouseSpeedBar.setIncrement(5);
+        mMouseSpeedBar.setIncrement(mMouseSpeedBar.getContext().getResources().getInteger(R.integer.mouse_speed_seekbar_increment));
         mMouseSpeedBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_MOUSESPEED = progress / 100f;
             mEditor.putInt("mousespeed", progress);
@@ -143,7 +143,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         setSeekTextPercent(mMouseSpeedText, mMouseSpeedBar.getProgress());
 
         mGestureDelayBar.setRange(100, 1000);
-        mGestureDelayBar.setIncrement(10);
+        mGestureDelayBar.setIncrement(mGestureDelayBar.getContext().getResources().getInteger(R.integer.gesture_delay_seekbar_increment));
         mGestureDelayBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_LONGPRESS_TRIGGER = progress;
             mEditor.putInt("timeLongPressTrigger", progress);
@@ -153,7 +153,7 @@ public abstract class QuickSettingSideDialog extends com.kdt.SideDialogView {
         setSeekTextMillisecond(mGestureDelayText, mGestureDelayBar.getProgress());
 
         mResolutionBar.setRange(25, 100);
-        mResolutionBar.setIncrement(5);
+        mResolutionBar.setIncrement(mResolutionBar.getContext().getResources().getInteger(R.integer.resolution_seekbar_increment));
         mResolutionBar.setOnSeekBarChangeListener((SimpleSeekBarListener) (seekBar, progress, fromUser) -> {
             PREF_SCALE_FACTOR = progress/100f;
             mEditor.putInt("resolutionRatio", progress);
