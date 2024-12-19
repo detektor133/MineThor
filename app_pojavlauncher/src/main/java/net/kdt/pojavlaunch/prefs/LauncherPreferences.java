@@ -17,6 +17,8 @@ import net.kdt.pojavlaunch.*;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.utils.JREUtils;
 
+import java.io.IOException;
+
 public class LauncherPreferences {
     public static final String PREF_KEY_CURRENT_PROFILE = "currentProfile";
     public static final String PREF_KEY_SKIP_NOTIFICATION_CHECK = "skipNotificationPermissionCheck";
@@ -175,7 +177,20 @@ public class LauncherPreferences {
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
         if (Math.min(metrics.widthPixels, metrics.heightPixels) < 1080) return false;
         if (Runtime.getRuntime().availableProcessors() <= 4) return false;
+        if (hasAllCoreSameFreq()) return false;
         return true;
+    }
+
+    private static boolean hasAllCoreSameFreq() {
+        int coreCount = Runtime.getRuntime().availableProcessors();
+        try {
+            String freq0 = Tools.read("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
+            String freqX = Tools.read("/sys/devices/system/cpu/cpu" + (coreCount - 1) + "/cpufreq/cpuinfo_max_freq");
+            if(freq0.equals(freqX)) return true;
+        } catch (IOException e) {
+            Log.e("LauncherPreferences", "Failed to read CPU frequencies", e);
+        }
+        return false;
     }
 
     /** Compute the notch size to avoid being out of bounds */
