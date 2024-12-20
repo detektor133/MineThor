@@ -155,7 +155,7 @@ public class LauncherPreferences {
 
     /// Find a correct resolution for the device
     ///
-    /// Some devices are shipped with ridiculously high resolution, which can cause performance issues
+    /// Some devices are shipped with a ridiculously high resolution, which can cause performance issues
     /// This function will try to find a resolution that is good enough for the device
     private static int findBestResolution(Context context, boolean isDevicePowerful) {
         DisplayMetrics metrics = context.getResources().getDisplayMetrics();
