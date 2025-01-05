@@ -30,8 +30,6 @@
 #define EVENT_TYPE_MOUSE_BUTTON 1006
 #define EVENT_TYPE_SCROLL 1007
 
-jint (*orig_ProcessImpl_forkAndExec)(JNIEnv *env, jobject process, jint mode, jbyteArray helperpath, jbyteArray prog, jbyteArray argBlock, jint argc, jbyteArray envBlock, jint envc, jbyteArray dir, jintArray std_fds, jboolean redirectErrorStream);
-
 static void registerFunctions(JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM* vm, __attribute__((unused)) void* reserved) {
@@ -228,56 +226,6 @@ void sendData(int type, int i1, int i2, int i3, int i4) {
         pojav_environ->inEventIndex -= EVENT_WINDOW_SIZE;
 
     atomic_fetch_add_explicit(&pojav_environ->eventCounter, 1, memory_order_acquire);
-}
-
-static jbyteArray stringToBytes(JNIEnv *env, const char* string) {
-    const jsize string_data_len = (jsize)(strlen(string) + 1);
-    jbyteArray result = (*env)->NewByteArray(env, (jsize)string_data_len);
-    (*env)->SetByteArrayRegion(env, result, 0, (jsize)string_data_len, (const jbyte*) string);
-    return result;
-}
-
-/**
- * Hooked version of java.lang.UNIXProcess.forkAndExec()
- * which is used to handle the "open" command and "ffmpeg" invocations
- */
-jint
-hooked_ProcessImpl_forkAndExec(JNIEnv *env, jobject process, jint mode, jbyteArray helperpath, jbyteArray prog, jbyteArray argBlock, jint argc, jbyteArray envBlock, jint envc, jbyteArray dir, jintArray std_fds, jboolean redirectErrorStream) {
-    const char *pProg = (char *)((*env)->GetByteArrayElements(env, prog, NULL));
-    const char* pProgBaseName = basename(pProg);
-    const size_t basename_len = strlen(pProgBaseName);
-    char prog_basename[basename_len];
-    memcpy(&prog_basename, pProgBaseName, basename_len + 1);
-    (*env)->ReleaseByteArrayElements(env, prog, (jbyte *)pProg, 0);
-
-    if(strcmp(prog_basename, "xdg-open") == 0) {
-        // When invoking xdg-open, send that open command into the android half instead
-        Java_org_lwjgl_glfw_CallbackBridge_nativeClipboard(env, NULL, /* CLIPBOARD_OPEN */ 2002, argBlock);
-        return 0;
-    }else if(strcmp(prog_basename, "ffmpeg") == 0) {
-        // When invoking ffmpeg, always replace the program path with the path to ffmpeg from the plugin.
-        const char* ffmpeg_path = getenv("POJAV_FFMPEG_PATH");
-        if(ffmpeg_path != NULL) {
-            prog = stringToBytes(env, ffmpeg_path);
-        }
-    }
-    return orig_ProcessImpl_forkAndExec(env, process, mode, helperpath, prog, argBlock, argc, envBlock, envc, dir, std_fds, redirectErrorStream);
-}
-
-void hookExec() {
-    jclass cls;
-    orig_ProcessImpl_forkAndExec = dlsym(RTLD_DEFAULT, "Java_java_lang_UNIXProcess_forkAndExec");
-    if (!orig_ProcessImpl_forkAndExec) {
-        orig_ProcessImpl_forkAndExec = dlsym(RTLD_DEFAULT, "Java_java_lang_ProcessImpl_forkAndExec");
-        cls = (*pojav_environ->runtimeJNIEnvPtr_JRE)->FindClass(pojav_environ->runtimeJNIEnvPtr_JRE, "java/lang/ProcessImpl");
-    } else {
-        cls = (*pojav_environ->runtimeJNIEnvPtr_JRE)->FindClass(pojav_environ->runtimeJNIEnvPtr_JRE, "java/lang/UNIXProcess");
-    }
-    JNINativeMethod methods[] = {
-        {"forkAndExec", "(I[B[B[BI[BI[B[IZ)I", (void *)&hooked_ProcessImpl_forkAndExec}
-    };
-    (*pojav_environ->runtimeJNIEnvPtr_JRE)->RegisterNatives(pojav_environ->runtimeJNIEnvPtr_JRE, cls, methods, 1);
-    printf("Registered forkAndExec\n");
 }
 
 /**
