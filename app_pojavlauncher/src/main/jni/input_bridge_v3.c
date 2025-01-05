@@ -230,23 +230,38 @@ void sendData(int type, int i1, int i2, int i3, int i4) {
     atomic_fetch_add_explicit(&pojav_environ->eventCounter, 1, memory_order_acquire);
 }
 
+static jbyteArray stringToBytes(JNIEnv *env, const char* string) {
+    const jsize string_data_len = (jsize)(strlen(string) + 1);
+    jbyteArray result = (*env)->NewByteArray(env, (jsize)string_data_len);
+    (*env)->SetByteArrayRegion(env, result, 0, (jsize)string_data_len, (const jbyte*) string);
+    return result;
+}
+
 /**
  * Hooked version of java.lang.UNIXProcess.forkAndExec()
- * which is used to handle the "open" command.
+ * which is used to handle the "open" command and "ffmpeg" invocations
  */
 jint
 hooked_ProcessImpl_forkAndExec(JNIEnv *env, jobject process, jint mode, jbyteArray helperpath, jbyteArray prog, jbyteArray argBlock, jint argc, jbyteArray envBlock, jint envc, jbyteArray dir, jintArray std_fds, jboolean redirectErrorStream) {
-    char *pProg = (char *)((*env)->GetByteArrayElements(env, prog, NULL));
-
-    // Here we only handle the "xdg-open" command
-    if (strcmp(basename(pProg), "xdg-open") != 0) {
-        (*env)->ReleaseByteArrayElements(env, prog, (jbyte *)pProg, 0);
-        return orig_ProcessImpl_forkAndExec(env, process, mode, helperpath, prog, argBlock, argc, envBlock, envc, dir, std_fds, redirectErrorStream);
-    }
+    const char *pProg = (char *)((*env)->GetByteArrayElements(env, prog, NULL));
+    const char* pProgBaseName = basename(pProg);
+    const size_t basename_len = strlen(pProgBaseName);
+    char prog_basename[basename_len];
+    memcpy(&prog_basename, pProgBaseName, basename_len + 1);
     (*env)->ReleaseByteArrayElements(env, prog, (jbyte *)pProg, 0);
 
-    Java_org_lwjgl_glfw_CallbackBridge_nativeClipboard(env, NULL, /* CLIPBOARD_OPEN */ 2002, argBlock);
-    return 0;
+    if(strcmp(prog_basename, "xdg-open") == 0) {
+        // When invoking xdg-open, send that open command into the android half instead
+        Java_org_lwjgl_glfw_CallbackBridge_nativeClipboard(env, NULL, /* CLIPBOARD_OPEN */ 2002, argBlock);
+        return 0;
+    }else if(strcmp(prog_basename, "ffmpeg") == 0) {
+        // When invoking ffmpeg, always replace the program path with the path to ffmpeg from the plugin.
+        const char* ffmpeg_path = getenv("POJAV_FFMPEG_PATH");
+        if(ffmpeg_path != NULL) {
+            prog = stringToBytes(env, ffmpeg_path);
+        }
+    }
+    return orig_ProcessImpl_forkAndExec(env, process, mode, helperpath, prog, argBlock, argc, envBlock, envc, dir, std_fds, redirectErrorStream);
 }
 
 void hookExec() {

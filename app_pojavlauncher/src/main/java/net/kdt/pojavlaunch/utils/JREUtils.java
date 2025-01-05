@@ -215,7 +215,7 @@ public class JREUtils {
         envMap.put("LD_LIBRARY_PATH", LD_LIBRARY_PATH);
         envMap.put("PATH", jreHome + "/bin:" + Os.getenv("PATH"));
         if(FFmpegPlugin.isAvailable) {
-            envMap.put("PATH", FFmpegPlugin.libraryPath+":"+envMap.get("PATH"));
+            envMap.put("POJAV_FFMPEG_PATH", FFmpegPlugin.executablePath);
         }
 
         if(LOCAL_RENDERER != null) {
