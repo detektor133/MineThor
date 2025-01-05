@@ -63,7 +63,6 @@ static jint hooked_ProcessImpl_forkAndExec(JNIEnv *env, jobject process, jint mo
         // Also add LD_LIBRARY_PATH and PATH for the lib in order to override the ones from the launcher, since
         // they may interfere with ffmpeg dependencies.
         const char* ffmpeg_path = getenv("POJAV_FFMPEG_PATH");
-        prog = NULL;
         if(ffmpeg_path != NULL) {
             replaceLibPathInEnvBlock(env, &envBlock, &envc, dirname(ffmpeg_path));
             prog = stringToBytes(env, ffmpeg_path);
