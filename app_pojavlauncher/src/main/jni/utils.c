@@ -164,7 +164,7 @@ JNIEnv* get_attached_env(JavaVM* jvm) {
         env_result = (*jvm)->AttachCurrentThread(jvm, &jvm_env, NULL);
     }
     if(env_result != JNI_OK) {
-        printf("get_attached_env failed: %i", env_result);
+        printf("get_attached_env failed: %i\n", env_result);
         return NULL;
     }
     return jvm_env;

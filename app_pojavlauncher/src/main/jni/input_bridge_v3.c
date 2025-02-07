@@ -32,6 +32,15 @@
 #define EVENT_TYPE_MOUSE_BUTTON 1006
 #define EVENT_TYPE_SCROLL 1007
 
+#define TRY_ATTACH_ENV(env_name, vm, error_message, then) JNIEnv* env_name;\
+do {                                                                       \
+    env_name = get_attached_env(vm);                                       \
+    if(env_name == NULL) {                                                 \
+        printf(error_message);                                             \
+        then                                                               \
+    }                                                                      \
+} while(0)
+
 static void registerFunctions(JNIEnv *env);
 
 jint JNI_OnLoad(JavaVM* vm, __attribute__((unused)) void* reserved) {
@@ -44,6 +53,7 @@ jint JNI_OnLoad(JavaVM* vm, __attribute__((unused)) void* reserved) {
         pojav_environ->bridgeClazz = (*dvEnv)->NewGlobalRef(dvEnv,(*dvEnv) ->FindClass(dvEnv,"org/lwjgl/glfw/CallbackBridge"));
         pojav_environ->method_accessAndroidClipboard = (*dvEnv)->GetStaticMethodID(dvEnv, pojav_environ->bridgeClazz, "accessAndroidClipboard", "(ILjava/lang/String;)Ljava/lang/String;");
         pojav_environ->method_onGrabStateChanged = (*dvEnv)->GetStaticMethodID(dvEnv, pojav_environ->bridgeClazz, "onGrabStateChanged", "(Z)V");
+        pojav_environ->method_onDirectInputEnable = (*dvEnv)->GetStaticMethodID(dvEnv, pojav_environ->bridgeClazz, "onDirectInputEnable", "()V");
         pojav_environ->isUseStackQueueCall = JNI_FALSE;
     } else if (pojav_environ->dalvikJavaVMPtr != vm) {
         LOGI("Saving JVM environ...");
@@ -249,7 +259,7 @@ JNIEXPORT jstring JNICALL Java_org_lwjgl_glfw_CallbackBridge_nativeClipboard(JNI
     (*pojav_environ->dalvikJavaVMPtr)->AttachCurrentThread(pojav_environ->dalvikJavaVMPtr, &dalvikEnv, NULL);
     assert(dalvikEnv != NULL);
     assert(pojav_environ->bridgeClazz != NULL);
-    
+
     LOGD("Clipboard: Converting string\n");
     char *copySrcC;
     jstring copyDst = NULL;
@@ -262,7 +272,7 @@ JNIEXPORT jstring JNICALL Java_org_lwjgl_glfw_CallbackBridge_nativeClipboard(JNI
     jstring pasteDst = convertStringJVM(dalvikEnv, env, (jstring) (*dalvikEnv)->CallStaticObjectMethod(dalvikEnv, pojav_environ->bridgeClazz, pojav_environ->method_accessAndroidClipboard, action, copyDst));
 
     if (copySrc) {
-        (*dalvikEnv)->DeleteLocalRef(dalvikEnv, copyDst);    
+        (*dalvikEnv)->DeleteLocalRef(dalvikEnv, copyDst);
         (*env)->ReleaseByteArrayElements(env, copySrc, (jbyte *)copySrcC, 0);
     }
     (*pojav_environ->dalvikJavaVMPtr)->DetachCurrentThread(pojav_environ->dalvikJavaVMPtr);
@@ -283,11 +293,16 @@ JNIEXPORT jboolean JNICALL Java_org_lwjgl_glfw_CallbackBridge_nativeSetInputRead
 }
 
 JNIEXPORT void JNICALL Java_org_lwjgl_glfw_CallbackBridge_nativeSetGrabbing(__attribute__((unused)) JNIEnv* env, __attribute__((unused)) jclass clazz, jboolean grabbing) {
-    JNIEnv *dalvikEnv;
-    (*pojav_environ->dalvikJavaVMPtr)->AttachCurrentThread(pojav_environ->dalvikJavaVMPtr, &dalvikEnv, NULL);
-    (*dalvikEnv)->CallStaticVoidMethod(dalvikEnv, pojav_environ->bridgeClazz, pojav_environ->method_onGrabStateChanged, grabbing);
-    (*pojav_environ->dalvikJavaVMPtr)->DetachCurrentThread(pojav_environ->dalvikJavaVMPtr);
+    TRY_ATTACH_ENV(dvm_env, pojav_environ->dalvikJavaVMPtr, "nativeSetGrabbing failed!\n", return;);
+    (*dvm_env)->CallStaticVoidMethod(dvm_env, pojav_environ->bridgeClazz, pojav_environ->method_onGrabStateChanged, grabbing);
     pojav_environ->isGrabbing = grabbing;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_org_lwjgl_glfw_CallbackBridge_nativeEnableGamepadDirectInput(__attribute__((unused)) JNIEnv *env, __attribute__((unused))  jclass clazz) {
+    TRY_ATTACH_ENV(dvm_env, pojav_environ->dalvikJavaVMPtr, "nativeEnableGamepadDirectInput failed!\n", return JNI_FALSE;);
+    (*dvm_env)->CallStaticVoidMethod(dvm_env, pojav_environ->bridgeClazz, pojav_environ->method_onDirectInputEnable);
+    return JNI_TRUE;
 }
 
 jboolean critical_send_char(jchar codepoint) {
@@ -449,7 +464,7 @@ JNIEXPORT void JNICALL Java_org_lwjgl_glfw_CallbackBridge_nativeSetWindowAttrib(
     // in environ for the Android UI thread but this is the only place that uses it
     // (very rarely, only in lifecycle callbacks) so i dont care
 
-    JNIEnv *jvm_env = get_attached_env(pojav_environ->runtimeJavaVMPtr);
+    TRY_ATTACH_ENV(jvm_env, pojav_environ->runtimeJavaVMPtr, "nativeSetWindowAttrib failed: %i", return;);
 
     (*jvm_env)->CallStaticVoidMethod(
             jvm_env, pojav_environ->vmGlfwClass,
@@ -523,4 +538,19 @@ static void registerFunctions(JNIEnv *env) {
                             bridge_class,
                             use_critical_cc ? critical_fcns : noncritical_fcns,
                             sizeof(critical_fcns)/sizeof(critical_fcns[0]));
+}
+
+JNIEXPORT jlong JNICALL
+Java_org_lwjgl_glfw_GLFW_internalGetGamepadDataPointer(JNIEnv *env, jclass clazz) {
+    return (jlong) &pojav_environ->gamepadState;
+}
+
+JNIEXPORT jobject JNICALL
+Java_org_lwjgl_glfw_CallbackBridge_nativeCreateGamepadButtonBuffer(JNIEnv *env, jclass clazz) {
+    return (*env)->NewDirectByteBuffer(env, &pojav_environ->gamepadState.buttons, sizeof(pojav_environ->gamepadState.buttons));
+}
+
+JNIEXPORT jobject JNICALL
+Java_org_lwjgl_glfw_CallbackBridge_nativeCreateGamepadAxisBuffer(JNIEnv *env, jclass clazz) {
+    return (*env)->NewDirectByteBuffer(env, &pojav_environ->gamepadState.axes, sizeof(pojav_environ->gamepadState.axes));
 }

@@ -2,8 +2,6 @@ package net.kdt.pojavlaunch.prefs.screens;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.hardware.Sensor;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 
 import androidx.preference.PreferenceCategory;

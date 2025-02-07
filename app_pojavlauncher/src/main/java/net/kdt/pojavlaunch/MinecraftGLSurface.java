@@ -29,6 +29,8 @@ import androidx.annotation.RequiresApi;
 import net.kdt.pojavlaunch.customcontrols.ControlLayout;
 import net.kdt.pojavlaunch.customcontrols.gamepad.DefaultDataProvider;
 import net.kdt.pojavlaunch.customcontrols.gamepad.Gamepad;
+import net.kdt.pojavlaunch.customcontrols.gamepad.direct.DirectGamepad;
+import net.kdt.pojavlaunch.customcontrols.gamepad.direct.DirectGamepadEnableHandler;
 import net.kdt.pojavlaunch.customcontrols.mouse.AbstractTouchpad;
 import net.kdt.pojavlaunch.customcontrols.mouse.AndroidPointerCapture;
 import net.kdt.pojavlaunch.customcontrols.mouse.InGUIEventProcessor;
@@ -40,15 +42,16 @@ import net.kdt.pojavlaunch.utils.MCOptionUtils;
 
 import org.lwjgl.glfw.CallbackBridge;
 
+import fr.spse.gamepad_remapper.GamepadHandler;
 import fr.spse.gamepad_remapper.RemapperManager;
 import fr.spse.gamepad_remapper.RemapperView;
 
 /**
  * Class dealing with showing minecraft surface and taking inputs to dispatch them to minecraft
  */
-public class MinecraftGLSurface extends View implements GrabListener {
+public class MinecraftGLSurface extends View implements GrabListener, DirectGamepadEnableHandler {
     /* Gamepad object for gamepad inputs, instantiated on need */
-    private Gamepad mGamepad = null;
+    private GamepadHandler mGamepadHandler;
     /* The RemapperView.Builder object allows you to set which buttons to remap */
     private final RemapperManager mInputManager = new RemapperManager(getContext(), new RemapperView.Builder(null)
             .remapA(true)
@@ -88,6 +91,7 @@ public class MinecraftGLSurface extends View implements GrabListener {
     public MinecraftGLSurface(Context context, AttributeSet attributeSet) {
         super(context, attributeSet);
         setFocusable(true);
+        CallbackBridge.setDirectGamepadEnableHandler(this);
     }
 
     @RequiresApi(api = Build.VERSION_CODES.O)
@@ -203,7 +207,11 @@ public class MinecraftGLSurface extends View implements GrabListener {
     }
 
     private void createGamepad(View contextView, InputDevice inputDevice) {
-        mGamepad = new Gamepad(contextView, inputDevice, DefaultDataProvider.INSTANCE, true);
+        if(CallbackBridge.sGamepadDirectInput) {
+            mGamepadHandler = new DirectGamepad();
+        }else {
+            mGamepadHandler = new Gamepad(contextView, inputDevice, DefaultDataProvider.INSTANCE, true);
+        }
     }
 
     /**
@@ -215,9 +223,9 @@ public class MinecraftGLSurface extends View implements GrabListener {
         int mouseCursorIndex = -1;
 
         if(Gamepad.isGamepadEvent(event)){
-            if(mGamepad == null) createGamepad(this, event.getDevice());
+            if(mGamepadHandler == null) createGamepad(this, event.getDevice());
 
-            mInputManager.handleMotionEventInput(getContext(), event, mGamepad);
+            mInputManager.handleMotionEventInput(getContext(), event, mGamepadHandler);
             return true;
         }
 
@@ -287,9 +295,9 @@ public class MinecraftGLSurface extends View implements GrabListener {
         }
 
         if(Gamepad.isGamepadEvent(event)){
-            if(mGamepad == null) createGamepad(this, event.getDevice());
+            if(mGamepadHandler == null) createGamepad(this, event.getDevice());
 
-            mInputManager.handleKeyEventInput(getContext(), event, mGamepad);
+            mInputManager.handleKeyEventInput(getContext(), event, mGamepadHandler);
             return true;
         }
 
@@ -409,6 +417,17 @@ public class MinecraftGLSurface extends View implements GrabListener {
             mCurrentTouchProcessor = pickEventProcessor(isGrabbing);
             mLastGrabState = isGrabbing;
         }
+    }
+
+    @Override
+    public void onDirectGamepadEnabled() {
+        post(()->{
+            if(mGamepadHandler != null && mGamepadHandler instanceof Gamepad) {
+                ((Gamepad)mGamepadHandler).removeSelf();
+            }
+            // Force gamepad recreation on next event
+            mGamepadHandler = null;
+        });
     }
 
     /** A small interface called when the listener is ready for the first time */
