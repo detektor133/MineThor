@@ -35,7 +35,7 @@ jobs:
           wget https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
 
       - name: Get JRE 8
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v9
         with:
           workflow: build.yml
           path: app_pojavlauncher/src/main/assets/components/jre
@@ -45,7 +45,7 @@ jobs:
           name: jre8-pojav
 
       - name: Get JRE17
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v9
         with:
           workflow: build.yml
           path: app_pojavlauncher/src/main/assets/components/jre-new
@@ -55,7 +55,7 @@ jobs:
           name: jre17-pojav
 
       - name: Get JRE21
-        uses: dawidd6/action-download-artifact@v2
+        uses: dawidd6/action-download-artifact@v9
         with:
           workflow: build.yml
           path: app_pojavlauncher/src/main/assets/components/jre-21
