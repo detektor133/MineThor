@@ -34,15 +34,15 @@
             app2:useSimpleSummaryProvider="true"/>
         <PreferenceCategory android:title="@string/preference_experimental_title">
             <SwitchPreference
-                android:title="@string/mg_renderer_title_gl43emu"
-                android:summary="@string/mg_renderer_summary_gl43emu"
-                android:key="mg_renderer_setting_gl43emu"
+                android:title="@string/mg_renderer_title_gl43exts"
+                android:summary="@string/mg_renderer_summary_gl43exts"
+                android:key="mg_renderer_setting_gl43exts"
                 android:defaultValue="false"
                 />
             <SwitchPreference
-                android:title="@string/mg_renderer_title_computeShaderemu"
-                android:summary="@string/mg_renderer_summary_computeShaderemu"
-                android:key="mg_renderer_computeShaderemu"
+                android:title="@string/mg_renderer_title_computeShaderext"
+                android:summary="@string/mg_renderer_summary_computeShaderext"
+                android:key="mg_renderer_computeShaderext"
                 android:defaultValue="false"
                 />
         </PreferenceCategory>

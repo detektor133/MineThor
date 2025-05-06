@@ -229,10 +229,10 @@ public class LauncherPreferences {
         MGConfigJson.put("enableNoError", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_errorSetting", "0")));
 
         // These guys are SwitchPreferences so they get special treatment, they need to be converted to ints
-        int gl43emu = DEFAULT_PREF.getBoolean("mg_renderer_setting_gl43emu", false) ? 1 : 0;
-        int computeShaderemu = DEFAULT_PREF.getBoolean("mg_renderer_computeShaderemu", false) ? 1 : 0;
-        MGConfigJson.put("enableExtGL43", gl43emu);
-        MGConfigJson.put("enableExtComputeShader", computeShaderemu);
+        int gl43exts = DEFAULT_PREF.getBoolean("mg_renderer_setting_gl43ext", false) ? 1 : 0;
+        int computeShaderext = DEFAULT_PREF.getBoolean("mg_renderer_computeShaderext", false) ? 1 : 0;
+        MGConfigJson.put("enableExtGL43", gl43exts);
+        MGConfigJson.put("enableExtComputeShader", computeShaderext);
 
         MGConfigJson.put("enableCompatibleMode", Integer.parseInt(DEFAULT_PREF.getString("", "0"))); // Placeholder, doesn't do anything on current MG
         MGConfigJson.put("multidrawMode", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_multidraw", "0")));
