@@ -37,18 +37,17 @@ For more details, check out our [wiki](https://pojavlauncher.app/)!
 
 ## Introduction
 
-* Amethyst is a Minecraft: Java Edition launcher for Android and iOS based on [Boardwalk](https://github.com/zhuowei/Boardwalk) and [PojavLauncher](https://github.com/zhuowei/Boardwalk)
+* Amethyst is a Minecraft: Java Edition launcher for Android and iOS based on [Boardwalk](https://github.com/zhuowei/Boardwalk) and [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)
 * This launcher can launch almost all available Minecraft versions ranging from rd-132211 to 1.21 snapshots (including Combat Test versions)
 * Modding via Forge and Fabric are also supported.
 * This repository contains source code for Android. For iOS/iPadOS, check out [Amethyst-iOS](https://github.com/AngelAuraMC/Amethyst-iOS).
 
 ## Getting PojavLauncher
 
-You can get PojavLauncher via three methods:
+You can get PojavLauncher via two methods:
 
 1. **Releases:** Download the prebuilt app from our [stable releases](https://github.com/AngelAuraMC/Amethyst-Android/releases) or [automatic builds](https://github.com/AngelAuraMC/Amethyst-Android/actions).
-2. **Google Play:** Get it from Google Play by clicking on this badge: [![Google Play](https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=net.kdt.pojavlaunch)
-3. **Build from Source:** Follow the [building instructions](#building) below.
+2. **Build from Source:** Follow the [building instructions](#building) below.
 
 ## Building
 
@@ -56,7 +55,7 @@ You can get PojavLauncher via three methods:
 
 The easiest way to build PojavLauncher is to use the pre-built JREs provided by our CI.
 
-1. Clone the repository: `git clone https://github.com/AngelAuraMC/Amethyst-Android.git`
+1. Clone the repository: `git clone --recursive https://github.com/AngelAuraMC/Amethyst-Android.git`
 2. Build the launcher: `./gradlew :app_pojavlauncher:assembleDebug` (Use `gradlew.bat` on Windows)
 
 The built APK will be located in `app_pojavlauncher/build/outputs/apk/debug/`.
@@ -65,7 +64,7 @@ The built APK will be located in `app_pojavlauncher/build/outputs/apk/debug/`.
 
 If you need more control over the build process, follow these steps:
 
-1. **Java Runtime Environment (JRE):** Download the `jre8-pojav` artifact from our [CI auto builds](https://github.com/AngelAuraMC/android-openjdk-build-multiarch/actions).  This package contains pre-built JREs for all supported architectures.  If you need to build the JRE yourself, follow the instructions in the [android-openjdk-build-multiarch](https://github.com/AngelAuraMC/android-openjdk-build-multiarch) repository.
+1. **Java Runtime Environment (JRE):** Download the `jre8-pojav` artifact from our [CI auto builds](https://github.com/AngelAuraMC/openjdk-build-multiarch/actions).  This package contains pre-built JREs for all supported architectures.  If you need to build the JRE yourself, follow the instructions in the [android-openjdk-build-multiarch](https://github.com/AngelAuraMC/openjdk-build-multiarch) repository.
 
 2. **LWJGL:** The build instructions for the custom LWJGL are available over the [LWJGL repository](https://github.com/AngelAuraMC/lwjgl3).
 
