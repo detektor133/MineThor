@@ -12,12 +12,12 @@
 
 Amethyst is a launcher that allows you to play Minecraft: Java Edition on your Android and [iOS](https://github.com/AngelAuraMC/Amethyst-iOS) devices.
 
-For more details, check out our [wiki](https://pojavlauncher.app/)!
+For more details, check out our [wiki](https://angelauramc.dev)!
 
 ## Important Notes
 
 * We do not have an official TikTok account. No one from the dev team makes TikTok videos.
-* The official Twitter for PojavLauncher is [@PLaunchTeam](https://twitter.com/PLaunchTeam). Any others (most notably @PojavLauncher) are fake.
+* The official Twitter for PojavLauncher is [@PLaunchTeam](https://twitter.com/AngelAuraMC). Any others are fake.
 
 ## Table of Contents
 
