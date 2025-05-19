@@ -1,23 +1,17 @@
-<h1 align="center">PojavLauncher</h1>
+<h1 align="center">Amethyst</h1>
 
 <img src="https://github.com/AngelAuraMC/Amethyst-Android/blob/v3_openjdk/app_pojavlauncher/src/main/assets/amethyst.png" align="left" width="130" height="150" alt="Amethyst logo">
 
 [![Android CI](https://github.com/AngelAuraMC/Amethyst-Android/workflows/Android%20CI/badge.svg)](https://github.com/AngelAuraMC/Amethyst-Android/actions)
 [![GitHub commit activity](https://img.shields.io/github/commit-activity/m/AngelAuraMC/Amethyst-Android)](https://github.com/AngelAuraMC/Amethyst-Android/actions)
 [![Crowdin](https://badges.crowdin.net/amethyst/localized.svg)](https://crowdin.com/project/amethyst)
-[![Discord](https://img.shields.io/discord/724163890803638273.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.com/invite/aenk3EUvER)
-[![Twitter Follow](https://img.shields.io/twitter/follow/Amethyst?color=blue&style=flat-square)](https://twitter.com/Amethyst)
+[![Discord](https://img.shields.io/discord/724163890803638273.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/98pZ8YY3Cq)
 
 *From [Boardwalk](https://github.com/zhuowei/Boardwalk)'s ashes and [PojavLauncher](https://github.com/PojavLauncherTeam/PojavLauncher)'s ruined reputation, here comes Amethyst!*
 
 Amethyst is a launcher that allows you to play Minecraft: Java Edition on your Android and [iOS](https://github.com/AngelAuraMC/Amethyst-iOS) devices.
 
-For more details, check out our [wiki](https://angelauramc.dev)!
-
-## Important Notes
-
-* We do not have an official TikTok account. No one from the dev team makes TikTok videos.
-* The official Twitter for PojavLauncher is [@PLaunchTeam](https://twitter.com/AngelAuraMC). Any others are fake.
+For more details, check out our [wiki](https://angelauramc.dev/wiki)!
 
 ## Table of Contents
 
@@ -106,7 +100,7 @@ See our [issue tracker](https://github.com/AngelAuraMC/Amethyst-Android/issues) 
 
 ## FAQ
 
-See our [wiki](https://AngelAuraMC.github.io/) for more information.
+See our [wiki](https://angelauramc.dev/wiki) for more information.
 
 ## Contributing
 
