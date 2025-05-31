@@ -3,6 +3,9 @@ package net.kdt.pojavlaunch.tasks;
 import static net.kdt.pojavlaunch.PojavApplication.sExecutorService;
 
 import android.app.Activity;
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -25,9 +28,12 @@ import net.kdt.pojavlaunch.value.DependentLibrary;
 import net.kdt.pojavlaunch.value.MinecraftClientInfo;
 import net.kdt.pojavlaunch.value.MinecraftLibraryArtifact;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +62,7 @@ public class MinecraftDownloader {
     private static final ThreadLocal<byte[]> sThreadLocalDownloadBuffer = new ThreadLocal<>();
 
     private boolean isLocalProfile = false;
+    private boolean isOnline;
 
     /**
      * Start the game version download process on the global executor service.
@@ -69,7 +76,9 @@ public class MinecraftDownloader {
                       @NonNull AsyncMinecraftDownloader.DoneListener listener) {
         if(activity != null){
             isLocalProfile = Tools.isLocalProfile(activity);
+            isOnline = Tools.isOnline(activity);
             Tools.switchDemo(Tools.isDemoProfile(activity));
+
         } else {
             isLocalProfile = true;
             Tools.switchDemo(true);
@@ -82,9 +91,6 @@ public class MinecraftDownloader {
                 }
                 downloadGame(activity, version, realVersion);
                 listener.onDownloadDone();
-            }catch (UnknownHostException e){
-                Log.i("DownloadMirror", e.toString());
-                Tools.showErrorRemote("Can't download Minecraft, no internet connection found", e);
             }catch (Exception e) {
                 listener.onDownloadFailed(e);
             }
@@ -473,18 +479,49 @@ public class MinecraftDownloader {
          * Since Minecraft libraries are stored in maven repositories, try to use
          * this when downloading libraries without hashes in the json.
          */
-        private void tryGetLibrarySha1() {
+        private void tryGetLibrarySha1() throws IOException {
+            File sha1CacheDir = new File(Tools.DIR_CACHE + "/sha1hashes");
+            File cacheFile = new File(sha1CacheDir.getAbsolutePath() + FileUtils.getFileName(mTargetUrl) + ".sha");
+
+            // Only use cache when its offline. No point in having cache invalidation now!
+            if (!isOnline) {
+                try (BufferedReader cacheFileReader = new BufferedReader(new FileReader(cacheFile))) {
+                    mTargetSha1 = cacheFileReader.readLine();
+                    if (mTargetSha1 != null) {
+                        Log.i("MinecraftDownloader", "(No internet found) Reading Hash: " + mTargetSha1 + " from " + cacheFile);
+                    } else if (cacheFile.exists()) {
+                        Log.i("MinecraftDownloader", "(No internet found) Deleting invalid hash from cache: " + cacheFile);
+                        cacheFile.delete();
+                    }
+                } catch (FileNotFoundException ignored) {
+                    mTargetSha1 = null;
+                    Log.w("MinecraftDownloader", "(No internet found) Failed to read hash for " + cacheFile);
+                }
+                return;
+            }
+
             String resultHash = null;
             try {
                 resultHash = downloadSha1();
                 // The hash is a 40-byte download.
                 mInternetUsageCounter.getAndAdd(40);
-            }catch (IOException e) {
+            } catch (IOException e) {
                 Log.i("MinecraftDownloader", "Failed to download hash", e);
+                if (cacheFile.exists() && new BufferedReader(new FileReader(cacheFile)).readLine() == null) {
+                    Log.i("MinecraftDownloader", "Deleting failed hash download from cache: " + cacheFile);
+                    cacheFile.delete();
+                }
             }
-            if(resultHash != null) {
-                Log.i("MinecraftDownloader", "Got hash: "+resultHash+ " for "+FileUtils.getFileName(mTargetUrl));
+            if (resultHash != null) {
+                Log.i("MinecraftDownloader", "Got hash: " + resultHash + " for " + FileUtils.getFileName(mTargetUrl));
                 mTargetSha1 = resultHash;
+                if (!sha1CacheDir.exists()) {
+                    sha1CacheDir.mkdir(); // If mkdir() fails, something went wrong with initializing /data/data/. mkdirs() isn't used on purpose
+                }
+                try (FileWriter writeHash = new FileWriter(cacheFile)) {
+                    Log.i("MinecraftDownloader", "Saving hash: " + resultHash + " for " + FileUtils.getFileName(mTargetUrl) + " to " + cacheFile);
+                    writeHash.write(resultHash);
+                }
             }
         }
 
