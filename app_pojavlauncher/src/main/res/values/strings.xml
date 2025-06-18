@@ -450,4 +450,7 @@
     <string name="change_account">Please change accounts to use this function</string>
     <string name="no_minecraft_account_found">No Minecraft Account Found</string>
     <string name="feature_requires_java_account">This feature requires a Microsoft account that owns Minecraft Java Edition.</string>
+    <string name="modloader_dl_install_neoforge">Create Neoforge profile</string>
+    <string name="neoforge_dl_select_version">Select NeoForge version</string>
+    <string name="neoforge_dl_no_installer">Sorry, but this version of NeoForge does not have an installer, which is not yet supported.</string>
 </resources>
