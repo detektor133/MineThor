@@ -3,6 +3,7 @@ package net.kdt.pojavlaunch;
 import static android.os.Build.VERSION.SDK_INT;
 import static android.os.Build.VERSION_CODES.P;
 import static net.kdt.pojavlaunch.PojavApplication.sExecutorService;
+import static net.kdt.pojavlaunch.PojavProfile.getAllProfiles;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_IGNORE_NOTCH;
 import static net.kdt.pojavlaunch.prefs.LauncherPreferences.PREF_NOTCH_SIZE;
 
@@ -1451,5 +1452,31 @@ public final class Tools {
     public static boolean isLocalProfile(Context ctx){
         MinecraftAccount currentProfile = PojavProfile.getCurrentProfileContent(ctx, null);
         return currentProfile == null || currentProfile.isLocal();
+    }
+    public static boolean hasOnlineProfile(){
+        for (MinecraftAccount accountToCheck : getAllProfiles()) {
+            if (!accountToCheck.isLocal() || !accountToCheck.isDemo()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    public static void hasNoOnlineProfileDialog(Activity activity){
+        if (hasOnlineProfile()){
+        } else dialogOnUiThread(activity, "No Minecraft Account Found", "Please log into your Minecraft: Java Edition account to use this feature.");
+    }
+    public static void hasNoOnlineProfileDialog(Activity activity, String customTitle, String customMessage){
+        if (hasOnlineProfile()){
+        } else dialogOnUiThread(activity, customTitle, customMessage);
+    }
+    public static void hasNoOnlineProfileDialog(Activity activity, Runnable run){
+        if (hasOnlineProfile()){
+            run.run();
+        } else dialogOnUiThread(activity, "No Minecraft Account Found", "Please log into your Minecraft: Java Edition account to use this feature.");
+    }
+    public static void hasNoOnlineProfileDialog(Activity activity, Runnable run, String customTitle, String customMessage){
+        if (hasOnlineProfile()){
+            run.run();
+        } else dialogOnUiThread(activity, customTitle, customMessage);
     }
 }
