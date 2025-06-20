@@ -69,12 +69,12 @@ public class MainMenuFragment extends Fragment {
         mShareLogsButton.setOnClickListener((v) -> shareLog(requireContext()));
 
         mOpenDirectoryButton.setOnClickListener((v)-> {
-            if (hasOnlineProfile()) {
-                if (Tools.isDemoProfile(v.getContext())){
-                    hasNoOnlineProfileDialog(getActivity(), "Demo Profile not supported", "Please change accounts to use this function");
-                }
-                openPath(v.getContext(), getCurrentProfileDirectory(), false);
-            } else hasNoOnlineProfileDialog(requireActivity());
+            if (Tools.isDemoProfile(v.getContext())){ // Say a different message when on demo profile since they might see the hidden demo folder
+                hasNoOnlineProfileDialog(getActivity(), getString(R.string.demo_unsupported), getString(R.string.change_account));
+            } else if (!hasOnlineProfile()) { // Otherwise display the generic pop-up to log in
+                hasNoOnlineProfileDialog(requireActivity());
+            } else openPath(v.getContext(), getCurrentProfileDirectory(), false);
+
         });
 
 

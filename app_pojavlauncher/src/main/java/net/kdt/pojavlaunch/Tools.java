@@ -1463,7 +1463,7 @@ public final class Tools {
     }
     public static void hasNoOnlineProfileDialog(Activity activity){
         if (hasOnlineProfile()){
-        } else dialogOnUiThread(activity, "No Minecraft Account Found", "Please log into your Minecraft: Java Edition account to use this feature.");
+        } else dialogOnUiThread(activity, activity.getString(R.string.no_minecraft_account_found), activity.getString(R.string.feature_requires_java_account));
     }
     public static void hasNoOnlineProfileDialog(Activity activity, String customTitle, String customMessage){
         if (hasOnlineProfile()){
@@ -1472,7 +1472,7 @@ public final class Tools {
     public static void hasNoOnlineProfileDialog(Activity activity, Runnable run){
         if (hasOnlineProfile()){
             run.run();
-        } else dialogOnUiThread(activity, "No Minecraft Account Found", "Please log into your Minecraft: Java Edition account to use this feature.");
+        } else dialogOnUiThread(activity, activity.getString(R.string.no_minecraft_account_found), activity.getString(R.string.feature_requires_java_account));
     }
     public static void hasNoOnlineProfileDialog(Activity activity, Runnable run, String customTitle, String customMessage){
         if (hasOnlineProfile()){

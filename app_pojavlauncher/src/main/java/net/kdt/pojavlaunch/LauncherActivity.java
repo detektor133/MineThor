@@ -141,7 +141,7 @@ public class LauncherActivity extends BaseActivity {
             }
 
             if (isOlderThan13) {
-                hasNoOnlineProfileDialog(this, getString(R.string.global_error), "This version is not available in demo mode.");
+                hasNoOnlineProfileDialog(this, getString(R.string.global_error), getString(R.string.demo_versions_supported));
                 return false;
             }
         }
