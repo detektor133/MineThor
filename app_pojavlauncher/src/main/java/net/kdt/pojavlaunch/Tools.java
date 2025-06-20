@@ -1455,7 +1455,7 @@ public final class Tools {
     }
     public static boolean hasOnlineProfile(){
         for (MinecraftAccount accountToCheck : getAllProfiles()) {
-            if (!accountToCheck.isLocal() || !accountToCheck.isDemo()) {
+            if (!accountToCheck.isLocal() && !accountToCheck.isDemo()) {
                 return true;
             }
         }
