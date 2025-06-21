@@ -1461,22 +1461,29 @@ public final class Tools {
         }
         return false;
     }
-    public static void hasNoOnlineProfileDialog(Activity activity){
-        if (hasOnlineProfile()){
-        } else dialogOnUiThread(activity, activity.getString(R.string.no_minecraft_account_found), activity.getString(R.string.feature_requires_java_account));
+
+    public static void hasNoOnlineProfileDialog(Activity activity, @Nullable Runnable run, @Nullable String customTitle, @Nullable String customMessage){
+        if (hasOnlineProfile() && !Tools.isDemoProfile(activity)){
+            if (run != null) { // Demo profile handling should be using customTitle and customMessage
+                run.run();
+            }
+        } else { // If there is no online profile, show a dialog
+            customTitle = customTitle == null ? activity.getString(R.string.no_minecraft_account_found) : customTitle;
+            customMessage = customMessage == null ? activity.getString(R.string.feature_requires_java_account) : customMessage;
+            dialogOnUiThread(activity, customTitle, customMessage);
+        }
     }
-    public static void hasNoOnlineProfileDialog(Activity activity, String customTitle, String customMessage){
-        if (hasOnlineProfile()){
-        } else dialogOnUiThread(activity, customTitle, customMessage);
+
+    // Some boilerplate to reduce boilerplate elsewhere
+    public static void hasNoOnlineProfileDialog(Activity activity){
+        hasNoOnlineProfileDialog(activity, null, null, null);
     }
     public static void hasNoOnlineProfileDialog(Activity activity, Runnable run){
-        if (hasOnlineProfile()){
-            run.run();
-        } else dialogOnUiThread(activity, activity.getString(R.string.no_minecraft_account_found), activity.getString(R.string.feature_requires_java_account));
+        hasNoOnlineProfileDialog(activity, run, null, null);
     }
-    public static void hasNoOnlineProfileDialog(Activity activity, Runnable run, String customTitle, String customMessage){
-        if (hasOnlineProfile()){
-            run.run();
-        } else dialogOnUiThread(activity, customTitle, customMessage);
+    public static void hasNoOnlineProfileDialog(Activity activity, String customTitle, String customMessage){
+        hasNoOnlineProfileDialog(activity, null, customTitle, customMessage);
     }
+
+
 }
