@@ -40,7 +40,9 @@ public class PojavProfile {
 	public static List<MinecraftAccount> getAllProfiles(){
 		List<MinecraftAccount> mcAccountList = new ArrayList<>();;
 		for (String accountName : getAllProfilesList()){
-			mcAccountList.add(MinecraftAccount.load(accountName));
+			if (MinecraftAccount.load(accountName) != null) {
+				mcAccountList.add(MinecraftAccount.load(accountName));
+			}
 		}
 		return mcAccountList;
 	}
