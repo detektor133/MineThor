@@ -453,4 +453,7 @@
     <string name="delete_account_and_login">Delete account and log in</string>
     <string name="login_again">Please log in again</string>
     <string name="account_corrupted">Selected account is corrupted</string>
+    <string name="modloader_dl_install_neoforge">Create Neoforge profile</string>
+    <string name="neoforge_dl_select_version">Select NeoForge version</string>
+    <string name="neoforge_dl_no_installer">Sorry, but this version of NeoForge does not have an installer, which is not yet supported.</string>
 </resources>
