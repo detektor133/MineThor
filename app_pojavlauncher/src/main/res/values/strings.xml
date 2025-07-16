@@ -456,4 +456,10 @@
     <string name="modloader_dl_install_neoforge">Create Neoforge profile</string>
     <string name="neoforge_dl_select_version">Select NeoForge version</string>
     <string name="neoforge_dl_no_installer">Sorry, but this version of NeoForge does not have an installer, which is not yet supported.</string>
+
+    <string name="preference_category_touchcontroller_settings">TouchController Settings</string>
+    <string name="preference_enable_touchcontroller_title">Enable TouchController</string>
+    <string name="preference_enable_touchcontroller_description">Enable TouchController integration.</string>
+    <string name="preference_touchcontroller_vibrate_length_title">TouchController vibrate length</string>
+    <string name="preference_touchcontroller_vibrate_length_description">Set the length of the vibration when using TouchController.</string>
 </resources>

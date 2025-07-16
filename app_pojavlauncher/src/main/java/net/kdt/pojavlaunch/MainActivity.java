@@ -63,6 +63,7 @@ import net.kdt.pojavlaunch.prefs.QuickSettingSideDialog;
 import net.kdt.pojavlaunch.services.GameService;
 import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
+import net.kdt.pojavlaunch.utils.TouchControllerUtils;
 import net.kdt.pojavlaunch.value.MinecraftAccount;
 import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;
 import net.kdt.pojavlaunch.value.launcherprofiles.MinecraftProfile;
@@ -102,6 +103,11 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (LauncherPreferences.PREF_ENABLE_TOUCHCONTROLLER) {
+            TouchControllerUtils.initialize(this);
+        }
+
         minecraftProfile = LauncherProfiles.getCurrentProfile();
         MCOptionUtils.load(Tools.getGameDirPath(minecraftProfile).getAbsolutePath());
 
