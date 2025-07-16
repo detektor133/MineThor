@@ -104,6 +104,7 @@ public class TouchControllerUtils {
         }
         MessageTransport transport = UnixSocketTransportKt.UnixSocketTransport(socketName);
         proxyClient = new LauncherProxyClient(transport);
+        proxyClient.run();
         Vibrator vibrator = ContextCompat.getSystemService(context, Vibrator.class);
         if (vibrator != null) {
             LauncherProxyClient.VibrationHandler vibrationHandler = new VibrationHandler(vibrator);
