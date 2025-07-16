@@ -104,12 +104,13 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        if (LauncherPreferences.PREF_ENABLE_TOUCHCONTROLLER) {
+        minecraftProfile = LauncherProfiles.getCurrentProfile();
+
+        String gameDirPath = Tools.getGameDirPath(minecraftProfile).getAbsolutePath();
+        MCOptionUtils.load(gameDirPath);
+        if (Tools.hasTouchController(new File(gameDirPath)) || LauncherPreferences.PREF_FORCE_ENABLE_TOUCHCONTROLLER) {
             TouchControllerUtils.initialize(this);
         }
-
-        minecraftProfile = LauncherProfiles.getCurrentProfile();
-        MCOptionUtils.load(Tools.getGameDirPath(minecraftProfile).getAbsolutePath());
 
         Intent gameServiceIntent = new Intent(this, GameService.class);
         // Start the service a bit early

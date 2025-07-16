@@ -167,9 +167,9 @@
     <PreferenceCategory
         android:title="@string/preference_category_touchcontroller_settings">
         <SwitchPreference
-            android:key="enableTouchController"
-            android:title="@string/preference_enable_touchcontroller_title"
-            android:summary="@string/preference_enable_touchcontroller_description"/>
+            android:key="forceEnableTouchController"
+            android:title="@string/preference_force_enable_touchcontroller_title"
+            android:summary="@string/preference_force_enable_touchcontroller_description"/>
         <net.kdt.pojavlaunch.prefs.CustomSeekBarPreference
             android:key="touchControllerVibrateLength"
             android:title="@string/preference_touchcontroller_vibrate_length_title"
