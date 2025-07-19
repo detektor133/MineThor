@@ -349,7 +349,6 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     }
 
     private void runCraft(String versionId, JMinecraftVersionList.Version version) throws Throwable {
-        LauncherPreferences.writeMGRendererSettings(); // No MG detection for you
         if(Tools.LOCAL_RENDERER == null) {
             Tools.LOCAL_RENDERER = LauncherPreferences.PREF_RENDERER;
         }
@@ -363,6 +362,9 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         MinecraftAccount minecraftAccount = PojavProfile.getCurrentProfileContent(this, null);
         Logger.appendToLog("--------- Starting game with Launcher Debug!");
         Tools.printLauncherInfo(versionId, Tools.isValidString(minecraftProfile.javaArgs) ? minecraftProfile.javaArgs : LauncherPreferences.PREF_CUSTOM_JAVA_ARGS);
+        if(Tools.LOCAL_RENDERER.equals("opengles_mobileglues")) {
+            LauncherPreferences.writeMGRendererSettings();
+        }
         JREUtils.redirectAndPrintJRELog();
         LauncherProfiles.load();
         int requiredJavaVersion = 8;
