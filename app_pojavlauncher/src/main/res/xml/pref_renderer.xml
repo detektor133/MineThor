@@ -9,7 +9,7 @@
             android:title="@string/mg_renderer_glsl_cache"
             android:key="mg_renderer_setting_glsl_cache_size"
             android:inputType="number"
-            android:defaultValue="2048" />
+            android:defaultValue="128" />
         <androidx.preference.ListPreference
             android:title="@string/mg_renderer_angle"
             android:key="mg_renderer_setting_angle"
