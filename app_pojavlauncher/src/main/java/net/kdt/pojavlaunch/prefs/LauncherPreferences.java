@@ -235,12 +235,16 @@ public class LauncherPreferences {
         // These guys are SwitchPreferences so they get special treatment, they need to be converted to ints
         int gl43exts = DEFAULT_PREF.getBoolean("mg_renderer_setting_gl43ext", false) ? 1 : 0;
         int computeShaderext = DEFAULT_PREF.getBoolean("mg_renderer_computeShaderext", false) ? 1 : 0;
+        int angleDepthClearFixMode = DEFAULT_PREF.getBoolean("mg_renderer_setting_angleDepthClearFixMode", false) ? 1 : 0;
+        int timerQueryExt = DEFAULT_PREF.getBoolean("mg_renderer_setting_timerQueryExt", false) ? 1 : 0;
         MGConfigJson.put("enableExtGL43", gl43exts);
         MGConfigJson.put("enableExtComputeShader", computeShaderext);
-
-        MGConfigJson.put("enableCompatibleMode", Integer.parseInt(DEFAULT_PREF.getString("", "0"))); // Placeholder, doesn't do anything on current MG
-        MGConfigJson.put("multidrawMode", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_multidraw", "0")));
-        MGConfigJson.put("maxGlslCacheSize", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_glsl_cache_size", "2048")));
+        MGConfigJson.put("angleDepthClearFixMode", angleDepthClearFixMode);
+        MGConfigJson.put("timerQueryExt", timerQueryExt);
+        if (DEFAULT_PREF.getBoolean("mg_renderer_multidrawCompute", false)) {
+            MGConfigJson.put("multidrawMode", 5); // Special handling for the (special mayhaps) compute emulation
+        } else MGConfigJson.put("multidrawMode", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_multidraw", "0")));
+        MGConfigJson.put("maxGlslCacheSize", Integer.parseInt(DEFAULT_PREF.getString("mg_renderer_setting_glsl_cache_size", "128")));
         File configFile = new File(Tools.DIR_DATA + "/MobileGlues", "config.json");
         FileUtils.ensureParentDirectory(configFile);
         try {
