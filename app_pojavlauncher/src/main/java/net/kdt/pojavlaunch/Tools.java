@@ -228,6 +228,27 @@ public final class Tools {
     }
 
     /**
+     * Search for TouchController mod to automatically enable TouchController mod support.
+     *
+     * @param gameDir current game directory
+     * @return whether TouchController is found
+     */
+    public static boolean hasTouchController(File gameDir) {
+        File modsDir = new File(gameDir, "mods");
+        File[] mods = modsDir.listFiles(file -> file.isFile() && file.getName().endsWith(".jar"));
+        if (mods == null) {
+            return false;
+        }
+        for (File file : mods) {
+            String name = file.getName().toLowerCase(Locale.ROOT);
+            if (name.contains("touchcontroller")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Initialize OpenGL and do checks to see if the GPU of the device is affected by the render
      * distance issue.
 

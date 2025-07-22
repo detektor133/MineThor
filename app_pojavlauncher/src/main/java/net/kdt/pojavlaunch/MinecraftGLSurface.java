@@ -39,6 +39,7 @@ import net.kdt.pojavlaunch.customcontrols.mouse.TouchEventProcessor;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.utils.JREUtils;
 import net.kdt.pojavlaunch.utils.MCOptionUtils;
+import net.kdt.pojavlaunch.utils.TouchControllerUtils;
 
 import org.lwjgl.glfw.CallbackBridge;
 
@@ -202,6 +203,7 @@ public class MinecraftGLSurface extends View implements GrabListener, DirectGame
             CallbackBridge.sendCursorPos(   e.getX(i) * LauncherPreferences.PREF_SCALE_FACTOR, e.getY(i) * LauncherPreferences.PREF_SCALE_FACTOR);
             return true; //mouse event handled successfully
         }
+        TouchControllerUtils.processTouchEvent(e, this);
         if (mIngameProcessor == null || mInGUIProcessor == null) return true;
         return mCurrentTouchProcessor.processTouchEvent(e);
     }
