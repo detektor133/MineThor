@@ -35,6 +35,7 @@ import android.provider.OpenableColumns;
 import android.util.ArrayMap;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.InputDevice;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.EditText;
@@ -1556,5 +1557,20 @@ public final class Tools {
             }
         }
         return Integer.parseInt(iVersionArray[0] + iVersionArray[1] + iVersionArray[2]);
+    }
+
+    public static boolean isPointerDeviceConnected() {
+        int[] deviceIds = InputDevice.getDeviceIds();
+        for (int id : deviceIds) {
+            InputDevice device = InputDevice.getDevice(id);
+            if (device == null) continue;
+            int sources = device.getSources();
+            if ((sources & InputDevice.SOURCE_MOUSE) == InputDevice.SOURCE_MOUSE
+                    || (sources & InputDevice.SOURCE_TOUCHPAD) == InputDevice.SOURCE_TOUCHPAD
+                    || (sources & InputDevice.SOURCE_TRACKBALL) == InputDevice.SOURCE_TRACKBALL) {
+                return true;
+            }
+        }
+        return false;
     }
 }
