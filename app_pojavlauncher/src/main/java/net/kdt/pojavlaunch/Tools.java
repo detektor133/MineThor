@@ -822,6 +822,9 @@ public final class Tools {
     public static void dialogOnUiThread(final Activity activity, final CharSequence title, final CharSequence message) {
         activity.runOnUiThread(()->dialog(activity, title, message));
     }
+    public static void dialogOnUiThread(final Activity activity, final int title, final int message) {
+        dialogOnUiThread(activity, activity.getString(title), activity.getString(message));
+    }
 
     public static void dialog(final Context context, final CharSequence title, final CharSequence message) {
         new AlertDialog.Builder(context)
@@ -1506,5 +1509,47 @@ public final class Tools {
         hasNoOnlineProfileDialog(activity, null, customTitle, customMessage);
     }
 
+    public static String getSelectedVanillaMcVer(){
+        String selectedProfile = LauncherPreferences.DEFAULT_PREF.getString(LauncherPreferences.PREF_KEY_CURRENT_PROFILE, "");
+        MinecraftProfile selected = LauncherProfiles.mainProfileJson.profiles.get(selectedProfile);
+        if (selected == null) { // This should NEVER happen.
+            throw new RuntimeException("No profile selected, how did you reach this? Go ask in the discord or github");
+        }
+        String currentMCVersion = selected.lastVersionId;
+        String vanillaVersion = currentMCVersion;
+        File providedJsonFile = new File(Tools.DIR_HOME_VERSION + "/" + currentMCVersion + "/" + currentMCVersion + ".json");
+        JMinecraftVersionList.Version providedJsonVersion = null;
+        try {
+            providedJsonVersion = Tools.GLOBAL_GSON.fromJson(Tools.read(providedJsonFile.getAbsolutePath()), JMinecraftVersionList.Version.class);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            vanillaVersion = providedJsonVersion.inheritsFrom != null ? providedJsonVersion.inheritsFrom : vanillaVersion;
+        } catch (NullPointerException e) {
+            throw new RuntimeException(e);
+        }
+        return vanillaVersion;
+    }
 
+    public static Integer mcVersiontoInt(String mcVersion){
+        String[] sVersionArray = mcVersion.split("\\.");
+        String[] iVersionArray = new String[3];
+        // Make sure this is actually a version string
+        for (int i = 0; i < iVersionArray.length; i++) {
+            // Ensure there's padding
+            sVersionArray[i] =  String.format("%3s", sVersionArray[i]).replace(' ', '0');
+            System.out.println(sVersionArray[i]);
+            // Grab only the last 3, MCJE 999.999.999 isnt coming soon anyway
+            sVersionArray[i] = sVersionArray[i].substring(sVersionArray[i].length() - 3);
+            try {
+                // Verify its a real deal, legit number
+                Integer.parseInt(sVersionArray[i]);
+                iVersionArray[i] = sVersionArray[i];
+            } catch (NumberFormatException e) {
+                throw new RuntimeException("Tools(mcVersiontoInt): Invalid version string");
+            }
+        }
+        return Integer.parseInt(iVersionArray[0] + iVersionArray[1] + iVersionArray[2]);
+    }
 }
