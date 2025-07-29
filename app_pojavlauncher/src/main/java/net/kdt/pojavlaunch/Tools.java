@@ -1537,11 +1537,16 @@ public final class Tools {
         String[] iVersionArray = new String[3];
         // Make sure this is actually a version string
         for (int i = 0; i < iVersionArray.length; i++) {
-            // Ensure there's padding
-            sVersionArray[i] =  String.format("%3s", sVersionArray[i]).replace(' ', '0');
-            System.out.println(sVersionArray[i]);
-            // Grab only the last 3, MCJE 999.999.999 isnt coming soon anyway
-            sVersionArray[i] = sVersionArray[i].substring(sVersionArray[i].length() - 3);
+            try {
+                // Ensure there's padding
+                sVersionArray[i] =  String.format("%3s", sVersionArray[i]).replace(' ', '0');
+                // Grab only the last 3, MCJE 999.999.999 isnt coming soon anyway
+                sVersionArray[i] = sVersionArray[i].substring(sVersionArray[i].length() - 3);
+            } catch (ArrayIndexOutOfBoundsException ignored){
+                // If we don't get 3 a third array, pad with 0s because it's probably 1.21 or something
+                iVersionArray[i] = "000";
+                continue;
+            }
             try {
                 // Verify its a real deal, legit number
                 Integer.parseInt(sVersionArray[i]);
