@@ -926,7 +926,7 @@ public final class Tools {
                 insertSafety(inheritsVer, customVer,
                         "assetIndex", "assets", "id",
                         "mainClass", "minecraftArguments",
-                        "releaseTime", "time", "type"
+                        "releaseTime", "time", "type", "inheritsFrom"
                 );
 
                 // Go through the libraries, remove the ones overridden by the custom version
