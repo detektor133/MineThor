@@ -469,4 +469,5 @@
     <string name="preference_force_enable_touchcontroller_description">Force enable TouchController integration, even if mod file is not found.</string>
     <string name="preference_touchcontroller_vibrate_length_title">TouchController vibrate length</string>
     <string name="preference_touchcontroller_vibrate_length_description">Set the length of the vibration when using TouchController.</string>
+    <string name="error_vanilla_json_corrupt">Vanilla json seems to be corrupt. Please send a bug report on github or discord.</string>
 </resources>
