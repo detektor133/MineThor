@@ -71,7 +71,6 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
     public void handleAutomaticCapture() {
         if (!CallbackBridge.isGrabbing() // Only capture if not in menu and user said so
         && !PREF_MOUSE_GRAB_FORCE) {
-            mTouchpad.disable();
             return;
         }
         if (mHostView.hasPointerCapture()) {
