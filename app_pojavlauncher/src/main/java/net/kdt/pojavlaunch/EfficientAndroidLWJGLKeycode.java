@@ -1,12 +1,17 @@
 package net.kdt.pojavlaunch;
 
+import static org.lwjgl.glfw.CallbackBridge.sendChar;
 import static org.lwjgl.glfw.CallbackBridge.sendKeyPress;
 
+import android.util.Log;
 import android.view.KeyEvent;
+
+import net.kdt.pojavlaunch.customcontrols.keyboard.LwjglCharSender;
 
 import org.lwjgl.glfw.CallbackBridge;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class EfficientAndroidLWJGLKeycode {
 
@@ -16,6 +21,7 @@ public class EfficientAndroidLWJGLKeycode {
     private static final int KEYCODE_COUNT = 106;
     private static final int[] sAndroidKeycodes = new int[KEYCODE_COUNT];
     private static final short[] sLwjglKeycodes = new short[KEYCODE_COUNT];
+    private static HashMap<Short, Integer> androidKeycodesMap;
     private static String[] androidKeyNameArray; /* = new String[androidKeycodes.length]; */
     private static int mTmpCount = 0;
 
@@ -158,7 +164,10 @@ public class EfficientAndroidLWJGLKeycode {
         add(KeyEvent.KEYCODE_NUMPAD_ENTER, LwjglGlfwKeycode.GLFW_KEY_KP_ENTER);
         add(KeyEvent.KEYCODE_NUMPAD_EQUALS, LwjglGlfwKeycode.GLFW_KEY_EQUAL); //161
 
-
+        androidKeycodesMap = new HashMap<>(sLwjglKeycodes.length);
+        for (int i = 0; i < sLwjglKeycodes.length; i++) {
+            androidKeycodesMap.put(sLwjglKeycodes[i], sAndroidKeycodes[i]);
+        }
     }
 
     public static boolean containsIndex(int index){
@@ -196,6 +205,20 @@ public class EfficientAndroidLWJGLKeycode {
     public static void execKeyIndex(int index){
         //Send a quick key press.
         sendKeyPress(getValueByIndex(index));
+    }
+
+    public static void execCharFromLwjglIndex(int lwjglkeycode){
+        if (androidKeycodesMap == null || androidKeycodesMap.isEmpty()) {
+            // This should not happen if the static initializer block ran correctly.
+            // Consider logging an error or throwing an exception.
+            Logger.appendToLog("EfficientLwjglKeycode: Error: lwjglKeycodes not initialized properly, controlmap can't type in chat");
+            return;
+        }
+
+        int androidKeycode = androidKeycodesMap.get((short) lwjglkeycode);
+        KeyEvent key = new KeyEvent(KeyEvent.ACTION_UP, androidKeycode);
+        CallbackBridge.sendChar(((char) key.getUnicodeChar()), 0);
+        Logger.appendToLog("EfficientLwjglKeycode: androidKeycode: " +androidKeycode+ " key.Unicode: " +key.getUnicodeChar() + ", " + (char) key.getUnicodeChar());
     }
 
     public static short getValueByIndex(int index) {
