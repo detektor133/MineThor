@@ -40,10 +40,13 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
         hostView.setOnCapturedPointerListener(this);
         hostView.getViewTreeObserver().addOnWindowFocusChangeListener(this);
         DEFAULT_PREF.registerOnSharedPreferenceChangeListener(this);
-        if (!PREF_MOUSE_GRAB_FORCE)
-            CallbackBridge.addGrabListener(this);
+        CallbackBridge.addGrabListener(this);
     }
 
+    /**
+     * Checks whether or not the touchpad is already enabled and if user prefers virtual cursor
+     * if they don't, the touchpad is not enabled
+     */
     private void enableTouchpadIfNecessary() {
         if(!mTouchpad.getDisplayState() && PREF_MOUSE_GRAB_FORCE) mTouchpad.enable(true);
     }
@@ -51,31 +54,26 @@ public class AndroidPointerCapture implements ViewTreeObserver.OnWindowFocusChan
     // Needed so it releases the cursor when inside game menu
     @Override
     public void onGrabState(boolean isGrabbing) {
-        updateCursorState(isGrabbing);
+        handleAutomaticCapture();
     }
     // It's only here so the side-dialog changes it live
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, @Nullable String key) {
-        updateCursorState(CallbackBridge.isGrabbing());
-    }
-    private void updateCursorState(boolean isGrabbing) {
-        if (!isGrabbing // Only capture if not in menu and user said so
-            && !PREF_MOUSE_GRAB_FORCE) {
-            mHostView.releasePointerCapture(); // Release the capture since user said so
-        }
-        // Capture the pointer when not inside a menu
-        // So user doesn't have to click to get rid of cursor
+        if (sharedPreferences.getBoolean("always_grab_mouse", true)){
+            enableTouchpadIfNecessary();
+        } else mTouchpad.disable();
         handleAutomaticCapture();
     }
 
     public void handleAutomaticCapture() {
-        if (!CallbackBridge.isGrabbing() // Only capture if not in menu and user said so
+        // isGrabbing checks for whether we are in menu
+        if (!CallbackBridge.isGrabbing()
         && !PREF_MOUSE_GRAB_FORCE) {
+            mHostView.releasePointerCapture();
             return;
         }
         if (mHostView.hasPointerCapture()) {
             enableTouchpadIfNecessary();
-            return;
         }
         if (!mHostView.hasWindowFocus()) {
             mHostView.requestFocus();
