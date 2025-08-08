@@ -40,7 +40,7 @@ For more details, check out our [wiki](https://angelauramc.dev/wiki)!
 
 You can get Amethyst via two methods:
 
-1. **Releases:** Download the prebuilt app from our [stable releases](https://github.com/AngelAuraMC/Amethyst-Android/releases) or [automatic builds](https://github.com/AngelAuraMC/Amethyst-Android/actions).
+1. **Releases:** Download the latest prebuilt app from [nightly.link](https://nightly.link/AngelAuraMC/Amethyst-Android/workflows/android/v3_openjdk/app-debug.zip) or select an older version from our [automatic builds](https://github.com/AngelAuraMC/Amethyst-Android/actions).
 2. **Build from Source:** Follow the [building instructions](#building) below.
 
 ## Building
