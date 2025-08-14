@@ -198,14 +198,13 @@ public class ControlButton extends TextView implements ControlInterface {
     public void sendKeyPresses(boolean isDown){
         setActivated(isDown);
         for(int keycode : mProperties.keycodes){
-            if (!isDown) {
-                PojavApplication.sExecutorService.execute(() -> {
-                    EfficientAndroidLWJGLKeycode.execCharFromLwjglIndex(keycode);
-                });
-                Logger.appendToLog("ExecChar: lwjglCode: " + keycode);
-            }
             if(keycode >= GLFW_KEY_UNKNOWN){
-                sendKeyPress(keycode, CallbackBridge.getCurrentMods(), isDown);
+                sendKeyPress(keycode, EfficientAndroidLWJGLKeycode.getAndroidKeyCode(keycode), CallbackBridge.getCurrentMods(), isDown);
+//                if (!isDown) {
+//                    PojavApplication.sExecutorService.execute(() -> {
+//                        EfficientAndroidLWJGLKeycode.execCharFromLwjglIndex(keycode);
+//                    });
+//                }
                 CallbackBridge.setModifiers(keycode, isDown);
             }else{
                 Log.i("punjabilauncher", "sendSpecialKey("+keycode+","+isDown+")");

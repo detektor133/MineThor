@@ -1,12 +1,8 @@
 package net.kdt.pojavlaunch;
 
-import static org.lwjgl.glfw.CallbackBridge.sendChar;
 import static org.lwjgl.glfw.CallbackBridge.sendKeyPress;
 
-import android.util.Log;
 import android.view.KeyEvent;
-
-import net.kdt.pojavlaunch.customcontrols.keyboard.LwjglCharSender;
 
 import org.lwjgl.glfw.CallbackBridge;
 
@@ -164,6 +160,7 @@ public class EfficientAndroidLWJGLKeycode {
         add(KeyEvent.KEYCODE_NUMPAD_ENTER, LwjglGlfwKeycode.GLFW_KEY_KP_ENTER);
         add(KeyEvent.KEYCODE_NUMPAD_EQUALS, LwjglGlfwKeycode.GLFW_KEY_EQUAL); //161
 
+        // TODO: Add toggle to disable because this uses ram
         androidKeycodesMap = new HashMap<>(sLwjglKeycodes.length);
         for (int i = 0; i < sLwjglKeycodes.length; i++) {
             androidKeycodesMap.put(sLwjglKeycodes[i], sAndroidKeycodes[i]);
@@ -207,18 +204,35 @@ public class EfficientAndroidLWJGLKeycode {
         sendKeyPress(getValueByIndex(index));
     }
 
-    public static void execCharFromLwjglIndex(int lwjglkeycode){
+    /**
+     * Takes LwjglGlfwKeycode and fetches the corresponding android equivalent.
+     * This is in a hashmap so it's fine to use.
+     * @param lwjglkeycode
+     * @return
+     */
+    public static char getAndroidKeyCode(int lwjglkeycode){
         if (androidKeycodesMap == null || androidKeycodesMap.isEmpty()) {
             // This should not happen if the static initializer block ran correctly.
             // Consider logging an error or throwing an exception.
             Logger.appendToLog("EfficientLwjglKeycode: Error: lwjglKeycodes not initialized properly, controlmap can't type in chat");
-            return;
+            return '\u0000';
         }
 
         int androidKeycode = androidKeycodesMap.get((short) lwjglkeycode);
         KeyEvent key = new KeyEvent(KeyEvent.ACTION_UP, androidKeycode);
-        CallbackBridge.sendChar(((char) key.getUnicodeChar()), 0);
+        // Handle keys that getUnicodeChar doesn't handle like backspace, tab, enter, etc.
+        // We get a null character otherwise which breaks things like m1, m2, soft-kb, controlmap
+        // These characters aren't needed either, the lwjgl keycode works for them
+        char charToSend;
+        if (key.getUnicodeChar() == 0) {
+            charToSend = '\u0000';
+        } else {
+            charToSend = ((char) key.getUnicodeChar());
+        }
         Logger.appendToLog("EfficientLwjglKeycode: androidKeycode: " +androidKeycode+ " key.Unicode: " +key.getUnicodeChar() + ", " + (char) key.getUnicodeChar());
+
+        //TODO: Handle modifier keys on android side, lwjgl will not handle shift/capslock for us
+        return charToSend;
     }
 
     public static short getValueByIndex(int index) {
