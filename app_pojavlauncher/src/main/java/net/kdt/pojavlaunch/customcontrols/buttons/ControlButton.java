@@ -1,7 +1,6 @@
 package net.kdt.pojavlaunch.customcontrols.buttons;
 
 import static net.kdt.pojavlaunch.LwjglGlfwKeycode.GLFW_KEY_UNKNOWN;
-import static org.lwjgl.glfw.CallbackBridge.sendChar;
 import static org.lwjgl.glfw.CallbackBridge.sendKeyPress;
 import static org.lwjgl.glfw.CallbackBridge.sendMouseButton;
 
@@ -9,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.os.Build;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -18,20 +16,15 @@ import android.view.View;
 import android.widget.TextView;
 
 import net.kdt.pojavlaunch.EfficientAndroidLWJGLKeycode;
-import net.kdt.pojavlaunch.Logger;
 import net.kdt.pojavlaunch.LwjglGlfwKeycode;
 import net.kdt.pojavlaunch.MainActivity;
-import net.kdt.pojavlaunch.PojavApplication;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.customcontrols.ControlData;
 import net.kdt.pojavlaunch.customcontrols.ControlLayout;
 import net.kdt.pojavlaunch.customcontrols.handleview.EditControlSideDialog;
-import net.kdt.pojavlaunch.customcontrols.keyboard.LwjglCharSender;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 
 import org.lwjgl.glfw.CallbackBridge;
-
-import java.util.concurrent.CompletableFuture;
 
 @SuppressLint({"ViewConstructor", "AppCompatCustomView"})
 public class ControlButton extends TextView implements ControlInterface {

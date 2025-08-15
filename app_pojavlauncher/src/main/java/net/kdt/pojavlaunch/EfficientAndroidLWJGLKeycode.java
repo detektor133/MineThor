@@ -210,11 +210,7 @@ public class EfficientAndroidLWJGLKeycode {
         int androidKeycode = sAndroidKeycodes[sLwjglKeycodesReversed[lwjglGlfwKeycode]];
         KeyEvent key = new KeyEvent(KeyEvent.ACTION_UP, androidKeycode);
         char charToSend;
-        if (key.getUnicodeChar() == 0) {
-            charToSend = '\u0000';
-        } else {
-            charToSend = ((char) key.getUnicodeChar());
-        }
+        charToSend = ((char) key.getUnicodeChar());
         int currentMods = CallbackBridge.getCurrentMods();
         if (Character.isLetter(charToSend) && (
         ((currentMods & LwjglGlfwKeycode.GLFW_MOD_SHIFT) != 0) ^
