@@ -200,17 +200,15 @@ public class EfficientAndroidLWJGLKeycode {
     }
 
     /**
-     * Takes LwjglGlfwKeycode and fetches the corresponding android equivalent.
-     * This is in a hashmap so it's fine to use.
-     * @param lwjglkeycode
-     * @return
+     * Takes a GLFW keycode and returns its char primitive. Works with Shift/Caps Lock.
+     * <p>
+     * Non-letter characters return U+0000.
+     *
+     * @param lwjglGlfwKeycode A GLFW key code macro (e.g., {@link LwjglGlfwKeycode#GLFW_KEY_W}).
      */
-    public static char getAndroidKeyCode(int lwjglkeycode){
-        int androidKeycode = sAndroidKeycodes[sLwjglKeycodesReversed[lwjglkeycode]];
+    public static char getLwjglChar(int lwjglGlfwKeycode){
+        int androidKeycode = sAndroidKeycodes[sLwjglKeycodesReversed[lwjglGlfwKeycode]];
         KeyEvent key = new KeyEvent(KeyEvent.ACTION_UP, androidKeycode);
-        // Handle keys that getUnicodeChar doesn't handle like backspace, tab, enter, etc.
-        // We get a null character otherwise which breaks things like m1, m2, soft-kb, controlmap
-        // The keychar for these aren't needed either, keycode works fine
         char charToSend;
         if (key.getUnicodeChar() == 0) {
             charToSend = '\u0000';
@@ -224,7 +222,6 @@ public class EfficientAndroidLWJGLKeycode {
         ){
             charToSend = Character.toUpperCase(charToSend);
         }
-        //TODO: Handle modifier keys on android side, lwjgl will not handle shift/capslock for us
         return charToSend;
     }
 
