@@ -23,6 +23,7 @@ public final class MineThorItemIconResolver {
     private static final String TAG = "MineThorIcons";
     private static final int MAX_MODEL_DEPTH = 8;
     private static final Map<String, Bitmap> ICON_CACHE = new HashMap<>();
+    private static final Map<String, Boolean> MISS_CACHE = new HashMap<>();
     private static String activeVersionId = "";
 
     private MineThorItemIconResolver() {
@@ -33,58 +34,80 @@ public final class MineThorItemIconResolver {
 
         activeVersionId = versionId;
         ICON_CACHE.clear();
+        MISS_CACHE.clear();
     }
 
     public static synchronized Bitmap iconFor(String itemId) {
         if (itemId == null || itemId.isEmpty() || activeVersionId.isEmpty()) return null;
         if (ICON_CACHE.containsKey(itemId)) return ICON_CACHE.get(itemId);
+        if (MISS_CACHE.containsKey(itemId)) return null;
 
         Bitmap icon = loadIcon(itemId);
-        ICON_CACHE.put(itemId, icon);
+        if (icon == null) {
+            MISS_CACHE.put(itemId, true);
+        } else {
+            ICON_CACHE.put(itemId, icon);
+        }
         return icon;
     }
 
     private static Bitmap loadIcon(String itemId) {
         File clientJar = new File(Tools.DIR_HOME_VERSION, activeVersionId + File.separator + activeVersionId + ".jar");
-        if (!clientJar.isFile()) return null;
+        if (!clientJar.isFile()) {
+            Log.d(TAG, "Client jar is missing for " + itemId + ": " + clientJar.getAbsolutePath());
+            return null;
+        }
 
         try (ZipFile jar = new ZipFile(clientJar)) {
             ResourceId modelId = ResourceId.parse(itemId);
-            JSONObject textures = new JSONObject();
-            JSONObject model = readModel(jar, modelId, textures, 0);
-            if (model == null) return null;
+            String texture = resolveModelTexture(jar, modelId);
+            if (texture.isEmpty()) {
+                Log.d(TAG, "Texture is missing for " + itemId + " in " + modelId.modelPath());
+                return null;
+            }
 
-            String texture = resolveTexture(textures, "layer0");
-            if (texture.isEmpty()) return null;
-
-            return readTexture(jar, ResourceId.parse(texture));
+            Bitmap bitmap = readTexture(jar, ResourceId.parse(texture));
+            if (bitmap == null) Log.d(TAG, "Texture png is missing for " + itemId + ": " + ResourceId.parse(texture).texturePath());
+            return bitmap;
         } catch (IOException | JSONException | RuntimeException e) {
             Log.d(TAG, "Cannot load icon for " + itemId, e);
             return null;
         }
     }
 
-    private static JSONObject readModel(ZipFile jar, ResourceId modelId, JSONObject mergedTextures, int depth) throws IOException, JSONException {
+    private static String resolveModelTexture(ZipFile jar, ResourceId modelId) throws IOException, JSONException {
+        ModelData model = readModel(jar, modelId, 0);
+        if (model == null) return "";
+
+        String layer = resolveTexture(model.textures, "layer0");
+        if (!layer.isEmpty()) return layer;
+        String particle = resolveTexture(model.textures, "particle");
+        if (!particle.isEmpty()) return particle;
+
+        return firstPresentTexture(model.textures, "all", "side", "top", "front", "end");
+    }
+
+    private static ModelData readModel(ZipFile jar, ResourceId modelId, int depth) throws IOException, JSONException {
         if (depth > MAX_MODEL_DEPTH) return null;
 
         JSONObject model = readJson(jar, modelId.modelPath());
-        if (model == null) return null;
+        if (model == null) {
+            Log.d(TAG, "Model json is missing: " + modelId.modelPath());
+            return null;
+        }
+
+        JSONObject mergedTextures = new JSONObject();
 
         String parent = model.optString("parent", "");
         if (!parent.isEmpty() && !parent.startsWith("builtin/")) {
             ResourceId parentId = ResourceId.parse(parent, modelId.namespace);
-            readModel(jar, parentId, mergedTextures, depth + 1);
+            ModelData parentData = readModel(jar, parentId, depth + 1);
+            if (parentData != null) copyTextures(parentData.textures, mergedTextures);
         }
 
         JSONObject textures = model.optJSONObject("textures");
-        if (textures != null) {
-            Iterator<String> keys = textures.keys();
-            while (keys.hasNext()) {
-                String key = keys.next();
-                mergedTextures.put(key, textures.optString(key, ""));
-            }
-        }
-        return model;
+        if (textures != null) copyTextures(textures, mergedTextures);
+        return new ModelData(mergedTextures);
     }
 
     private static String resolveTexture(JSONObject textures, String key) {
@@ -93,6 +116,22 @@ public final class MineThorItemIconResolver {
             value = textures.optString(value.substring(1), "");
         }
         return value.startsWith("#") ? "" : value;
+    }
+
+    private static String firstPresentTexture(JSONObject textures, String... keys) {
+        for (String key : keys) {
+            String value = resolveTexture(textures, key);
+            if (!value.isEmpty()) return value;
+        }
+        return "";
+    }
+
+    private static void copyTextures(JSONObject source, JSONObject target) throws JSONException {
+        Iterator<String> keys = source.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
+            target.put(key, source.optString(key, ""));
+        }
     }
 
     private static JSONObject readJson(ZipFile jar, String path) throws IOException, JSONException {
@@ -149,6 +188,14 @@ public final class MineThorItemIconResolver {
 
         String texturePath() {
             return "assets/" + namespace + "/textures/" + path + ".png";
+        }
+    }
+
+    private static final class ModelData {
+        final JSONObject textures;
+
+        ModelData(JSONObject textures) {
+            this.textures = textures;
         }
     }
 }
