@@ -533,5 +533,16 @@
     <string name="minethor_probe_canvas_size" translatable="false">surface: %1$d x %2$d</string>
     <string name="minethor_probe_touch" translatable="false">touch action=%1$d x=%2$.1f y=%3$.1f pointers=%4$d</string>
     <string name="minethor_probe_no_touch" translatable="false">Touch the secondary screen.</string>
+    <string name="minethor_hud_title" translatable="false">MineThor read-only HUD mock</string>
+    <string name="minethor_hud_connected" translatable="false">Minecraft companion connected.</string>
+    <string name="minethor_hud_disconnected" translatable="false">Mock data. Minecraft companion is not connected.</string>
+    <string name="minethor_hud_yaw" translatable="false">Yaw %1$d°</string>
+    <string name="minethor_hud_coords" translatable="false">XYZ %1$d / %2$d / %3$d</string>
+    <string name="minethor_hud_health" translatable="false">Health %1$d/%2$d</string>
+    <string name="minethor_hud_food" translatable="false">Food %1$d/%2$d</string>
+    <string name="minethor_hud_armor" translatable="false">Armor %1$d</string>
+    <string name="minethor_hud_xp" translatable="false">XP %1$d</string>
+    <string name="minethor_hud_inventory" translatable="false">Inventory read-only</string>
+    <string name="minethor_hud_hotbar" translatable="false">Hotbar mock selection</string>
 
 </resources>
