@@ -23,10 +23,15 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
     private final String host;
     private final int port;
     private final LinkedBlockingQueue<JSONObject> outgoingMessages = new LinkedBlockingQueue<>();
-    private final AtomicInteger requestIds = new AtomicInteger(1);
+    private final AtomicInteger commandIds = new AtomicInteger(1);
+    private final Object snapshotLock = new Object();
     private volatile boolean closed;
     private volatile CompanionSnapshot snapshot = MockCompanionState.create();
     private volatile Listener listener;
+    private int pendingHotbarCommandId;
+    private int pendingHotbarSlot;
+    private int pendingInventoryCommandId;
+    private int pendingInventorySlot;
     private Socket socket;
     private DataOutputStream output;
     private Thread worker;
@@ -44,13 +49,25 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
 
     @Override
     public CompanionSnapshot selectHotbarSlot(int slot) {
-        sendCommand(slot, true);
+        int commandId = sendCommand(slot, true);
+        synchronized (snapshotLock) {
+            pendingHotbarCommandId = commandId;
+            pendingHotbarSlot = slot;
+            snapshot = snapshotWithPendingSelections(snapshot);
+        }
+        notifyChanged();
         return snapshot;
     }
 
     @Override
     public CompanionSnapshot selectInventorySlot(int slot) {
-        sendCommand(slot, false);
+        int commandId = sendCommand(slot, false);
+        synchronized (snapshotLock) {
+            pendingInventoryCommandId = commandId;
+            pendingInventorySlot = slot;
+            snapshot = snapshotWithPendingSelections(snapshot);
+        }
+        notifyChanged();
         return snapshot;
     }
 
@@ -87,7 +104,9 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
                 socket.setSoTimeout(CONNECT_TIMEOUT_MS);
                 DataOutputStream socketOutput = new DataOutputStream(socket.getOutputStream());
                 output = socketOutput;
-                snapshot = new CompanionSnapshot(true, snapshot.player, snapshot.inventory);
+                synchronized (snapshotLock) {
+                    snapshot = new CompanionSnapshot(true, snapshot.lastAppliedCommandId, snapshot.player, snapshot.inventory);
+                }
                 notifyChanged();
 
                 DataInputStream input = new DataInputStream(socket.getInputStream());
@@ -101,7 +120,9 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
                 socket = null;
                 closeOutput();
                 if (!closed && snapshot.connected) {
-                    snapshot = new CompanionSnapshot(false, snapshot.player, snapshot.inventory);
+                    synchronized (snapshotLock) {
+                        snapshot = new CompanionSnapshot(false, snapshot.lastAppliedCommandId, snapshot.player, snapshot.inventory);
+                    }
                     notifyChanged();
                 }
             }
@@ -109,16 +130,17 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
         }
     }
 
-    private void sendCommand(int slot, boolean hotbar) {
+    private int sendCommand(int slot, boolean hotbar) {
+        int commandId = commandIds.getAndIncrement();
         try {
-            int requestId = requestIds.getAndIncrement();
             JSONObject message = hotbar
-                    ? CompanionProtocolCodec.hotbarCommand(requestId, slot)
-                    : CompanionProtocolCodec.inventorySelectCommand(requestId, slot);
+                    ? CompanionProtocolCodec.hotbarCommand(commandId, slot)
+                    : CompanionProtocolCodec.inventorySelectCommand(commandId, slot);
             outgoingMessages.offer(message);
         } catch (JSONException e) {
             Log.d(TAG, "Cannot build companion command", e);
         }
+        return commandId;
     }
 
     private void writePendingMessages(DataOutputStream socketOutput) throws IOException {
@@ -131,10 +153,41 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
     private void readSnapshotIfAvailable(DataInputStream input) throws IOException, JSONException {
         try {
             JSONObject message = CompanionProtocolCodec.readMessage(input);
-            snapshot = CompanionProtocolCodec.applyMessage(snapshot, message);
+            synchronized (snapshotLock) {
+                CompanionSnapshot authoritativeSnapshot = CompanionProtocolCodec.applyMessage(snapshot, message);
+                clearAcknowledgedPendingSelections(authoritativeSnapshot.lastAppliedCommandId);
+                snapshot = snapshotWithPendingSelections(authoritativeSnapshot);
+            }
             notifyChanged();
         } catch (SocketTimeoutException ignored) {
         }
+    }
+
+    private void clearAcknowledgedPendingSelections(int lastAppliedCommandId) {
+        if (pendingHotbarCommandId <= lastAppliedCommandId) {
+            pendingHotbarCommandId = 0;
+        }
+        if (pendingInventoryCommandId <= lastAppliedCommandId) {
+            pendingInventoryCommandId = 0;
+        }
+    }
+
+    private CompanionSnapshot snapshotWithPendingSelections(CompanionSnapshot source) {
+        InventorySnapshot inventory = source.inventory;
+        if (pendingHotbarCommandId > source.lastAppliedCommandId) {
+            inventory = inventory.withSelectedHotbarSlot(pendingHotbarSlot);
+        }
+        if (pendingInventoryCommandId > source.lastAppliedCommandId) {
+            inventory = inventory.withSelectedInventorySlot(pendingInventorySlot);
+        }
+        if (inventory == source.inventory) return source;
+
+        return new CompanionSnapshot(
+                source.connected,
+                source.lastAppliedCommandId,
+                source.player,
+                inventory
+        );
     }
 
     private void closeOutput() {

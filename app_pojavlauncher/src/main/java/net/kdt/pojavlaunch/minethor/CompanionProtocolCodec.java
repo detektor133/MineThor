@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public final class CompanionProtocolCodec {
-    public static final int PROTOCOL_VERSION = 1;
+    public static final int PROTOCOL_VERSION = 2;
     private static final int MAX_MESSAGE_BYTES = 64 * 1024;
 
     private CompanionProtocolCodec() {
@@ -42,30 +42,30 @@ public final class CompanionProtocolCodec {
         if ("HELLO".equals(type)) {
             int protocolVersion = message.optInt("protocolVersion", -1);
             if (protocolVersion != PROTOCOL_VERSION) return current;
-            return new CompanionSnapshot(true, current.player, current.inventory);
+            return new CompanionSnapshot(true, current.lastAppliedCommandId, current.player, current.inventory);
         }
         if ("PLAYER_STATE".equals(type)) {
-            return new CompanionSnapshot(current.connected, playerFromJson(current.player, message), current.inventory);
+            return new CompanionSnapshot(current.connected, commandAckFromJson(current, message), playerFromJson(current.player, message), current.inventory);
         }
         if ("INVENTORY_STATE".equals(type)) {
-            return new CompanionSnapshot(current.connected, current.player, inventoryFromJson(current.inventory, message));
+            return new CompanionSnapshot(current.connected, commandAckFromJson(current, message), current.player, inventoryFromJson(current.inventory, message));
         }
         if ("SNAPSHOT".equals(type)) {
             PlayerSnapshot player = message.has("player") ? playerFromJson(current.player, message.getJSONObject("player")) : current.player;
             InventorySnapshot inventory = message.has("inventory") ? inventoryFromJson(current.inventory, message.getJSONObject("inventory")) : current.inventory;
-            return new CompanionSnapshot(true, player, inventory);
+            return new CompanionSnapshot(true, commandAckFromJson(current, message), player, inventory);
         }
         return current;
     }
 
-    public static JSONObject hotbarCommand(int requestId, int slot) throws JSONException {
-        JSONObject message = command("SELECT_HOTBAR_SLOT", requestId);
+    public static JSONObject hotbarCommand(int commandId, int slot) throws JSONException {
+        JSONObject message = command("SELECT_HOTBAR_SLOT", commandId);
         message.put("slot", slot);
         return message;
     }
 
-    public static JSONObject inventorySelectCommand(int requestId, int slot) throws JSONException {
-        JSONObject message = command("SELECT_INVENTORY_SLOT", requestId);
+    public static JSONObject inventorySelectCommand(int commandId, int slot) throws JSONException {
+        JSONObject message = command("SELECT_INVENTORY_SLOT", commandId);
         message.put("slot", slot);
         return message;
     }
@@ -81,17 +81,22 @@ public final class CompanionProtocolCodec {
         JSONObject message = new JSONObject();
         message.put("type", "SNAPSHOT");
         message.put("protocolVersion", PROTOCOL_VERSION);
+        message.put("lastAppliedCommandId", snapshot.lastAppliedCommandId);
         message.put("player", playerToJson(snapshot.player));
         message.put("inventory", inventoryToJson(snapshot.inventory));
         return message;
     }
 
-    private static JSONObject command(String type, int requestId) throws JSONException {
+    private static JSONObject command(String type, int commandId) throws JSONException {
         JSONObject message = new JSONObject();
         message.put("type", type);
-        message.put("requestId", requestId);
+        message.put("commandId", commandId);
         message.put("protocolVersion", PROTOCOL_VERSION);
         return message;
+    }
+
+    private static int commandAckFromJson(CompanionSnapshot current, JSONObject message) {
+        return Math.max(current.lastAppliedCommandId, message.optInt("lastAppliedCommandId", current.lastAppliedCommandId));
     }
 
     private static PlayerSnapshot playerFromJson(PlayerSnapshot current, JSONObject message) {

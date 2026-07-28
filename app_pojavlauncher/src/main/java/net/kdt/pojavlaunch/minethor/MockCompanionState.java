@@ -18,6 +18,6 @@ public final class MockCompanionState {
                 17
         );
         InventorySnapshot inventory = new InventorySnapshot(0, -1);
-        return new CompanionSnapshot(false, player, inventory);
+        return new CompanionSnapshot(false, 0, player, inventory);
     }
 }

@@ -97,10 +97,15 @@ public class DevLoopbackCompanionServer {
     private boolean readCommandIfAvailable(DataInputStream input) throws IOException, JSONException {
         try {
             JSONObject command = CompanionProtocolCodec.readMessage(input);
+            if (command.optInt("protocolVersion", -1) != CompanionProtocolCodec.PROTOCOL_VERSION) return false;
+            int commandId = command.optInt("commandId", 0);
+            if (commandId <= snapshot.lastAppliedCommandId) return false;
+
             String type = command.optString("type", "");
             if ("SELECT_HOTBAR_SLOT".equals(type)) {
                 snapshot = new CompanionSnapshot(
                         snapshot.connected,
+                        commandId,
                         snapshot.player,
                         snapshot.inventory.withSelectedHotbarSlot(command.optInt("slot", snapshot.inventory.selectedHotbarSlot))
                 );
@@ -108,6 +113,7 @@ public class DevLoopbackCompanionServer {
             } else if ("SELECT_INVENTORY_SLOT".equals(type)) {
                 snapshot = new CompanionSnapshot(
                         snapshot.connected,
+                        commandId,
                         snapshot.player,
                         snapshot.inventory.withSelectedInventorySlot(command.optInt("slot", snapshot.inventory.selectedInventorySlot))
                 );
@@ -132,7 +138,7 @@ public class DevLoopbackCompanionServer {
                 player.armor,
                 player.xpLevel
         );
-        return new CompanionSnapshot(true, nextPlayer, current.inventory);
+        return new CompanionSnapshot(true, current.lastAppliedCommandId, nextPlayer, current.inventory);
     }
 
     private void closeClient() {
