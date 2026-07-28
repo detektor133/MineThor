@@ -53,7 +53,7 @@ public final class CompanionProtocolCodec {
         if ("SNAPSHOT".equals(type)) {
             PlayerSnapshot player = message.has("player") ? playerFromJson(current.player, message.getJSONObject("player")) : current.player;
             InventorySnapshot inventory = message.has("inventory") ? inventoryFromJson(current.inventory, message.getJSONObject("inventory")) : current.inventory;
-            return new CompanionSnapshot(true, commandAckFromJson(current, message), player, inventory);
+            return new CompanionSnapshot(message.optBoolean("connected", true), commandAckFromJson(current, message), player, inventory);
         }
         return current;
     }
@@ -81,6 +81,7 @@ public final class CompanionProtocolCodec {
         JSONObject message = new JSONObject();
         message.put("type", "SNAPSHOT");
         message.put("protocolVersion", PROTOCOL_VERSION);
+        message.put("connected", snapshot.connected);
         message.put("lastAppliedCommandId", snapshot.lastAppliedCommandId);
         message.put("player", playerToJson(snapshot.player));
         message.put("inventory", inventoryToJson(snapshot.inventory));

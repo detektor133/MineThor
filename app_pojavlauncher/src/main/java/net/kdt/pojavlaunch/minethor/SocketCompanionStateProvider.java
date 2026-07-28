@@ -26,7 +26,7 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
     private final AtomicInteger commandIds = new AtomicInteger(1);
     private final Object snapshotLock = new Object();
     private volatile boolean closed;
-    private volatile CompanionSnapshot snapshot = MockCompanionState.create();
+    private volatile CompanionSnapshot snapshot = InitialCompanionState.create();
     private volatile Listener listener;
     private int pendingHotbarCommandId;
     private int pendingHotbarSlot;

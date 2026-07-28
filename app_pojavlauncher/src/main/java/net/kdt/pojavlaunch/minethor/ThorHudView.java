@@ -41,8 +41,9 @@ public class ThorHudView extends View {
 
     public ThorHudView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        this.controller = new ThorCompanionController(new MockCompanionStateProvider());
+        this.controller = new ThorCompanionController(new SocketCompanionStateProvider(CompanionEndpoint.LOOPBACK_HOST, CompanionEndpoint.PORT));
         init();
+        this.controller.setListener(this::postInvalidate);
     }
 
     @Override
@@ -167,6 +168,8 @@ public class ThorHudView extends View {
     }
 
     private void updateSelection(float touchX, float touchY) {
+        if (!controller.currentSnapshot().connected) return;
+
         int inventorySlot = inventorySlotIndexFromTouch(touchX, touchY);
         if (inventorySlot >= 0) {
             controller.selectInventorySlot(inventorySlot);

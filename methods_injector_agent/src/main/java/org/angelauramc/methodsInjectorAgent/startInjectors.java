@@ -2,12 +2,14 @@ package org.angelauramc.methodsInjectorAgent;
 
 import org.angelauramc.methodsInjectorAgent.lwjgl2_methods_injector.ALC10Injector;
 import org.angelauramc.methodsInjectorAgent.lwjgl2_methods_injector.ASM5OverrideInjector;
+import org.angelauramc.methodsInjectorAgent.minethor.MineThorBridgeServer;
 import org.angelauramc.methodsInjectorAgent.mods_compatibility_injector.VeilImguiOverrideDisable;
 
 import java.lang.instrument.Instrumentation;
 
 public class startInjectors {
     public static void premain(String args, Instrumentation inst) {
+        MineThorBridgeServer.start();
         try {
             // Check if we have the asm classes we need
             Class.forName("org.objectweb.asm.ClassReader");
