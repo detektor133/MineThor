@@ -53,7 +53,6 @@ public final class MineThorBridgeServer {
             DataInputStream input = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
             int lastAppliedCommandId = 0;
-            int selectedInventorySlot = -1;
             writeMessage(output, helloMessage());
 
             long lastSnapshotAt = 0L;
@@ -62,18 +61,15 @@ public final class MineThorBridgeServer {
                 if (command != null && command.commandId > lastAppliedCommandId) {
                     boolean applied = applyCommand(minecraftStateAccess, command);
                     if (applied) {
-                        if ("SELECT_INVENTORY_SLOT".equals(command.type)) {
-                            selectedInventorySlot = command.slot;
-                        }
                         lastAppliedCommandId = command.commandId;
-                        writeMessage(output, snapshotMessage(minecraftStateAccess.readSnapshot(), lastAppliedCommandId, selectedInventorySlot));
+                        writeMessage(output, snapshotMessage(minecraftStateAccess.readSnapshot(), lastAppliedCommandId));
                         lastSnapshotAt = System.currentTimeMillis();
                     }
                 }
 
                 long now = System.currentTimeMillis();
                 if (now - lastSnapshotAt >= SNAPSHOT_INTERVAL_MS) {
-                    writeMessage(output, snapshotMessage(minecraftStateAccess.readSnapshot(), lastAppliedCommandId, selectedInventorySlot));
+                    writeMessage(output, snapshotMessage(minecraftStateAccess.readSnapshot(), lastAppliedCommandId));
                     lastSnapshotAt = now;
                 }
             }
@@ -86,9 +82,6 @@ public final class MineThorBridgeServer {
     private static boolean applyCommand(MinecraftStateAccess minecraftStateAccess, Command command) {
         if ("SELECT_HOTBAR_SLOT".equals(command.type)) {
             return minecraftStateAccess.selectHotbarSlot(command.slot);
-        }
-        if ("SELECT_INVENTORY_SLOT".equals(command.type)) {
-            return command.slot >= 0 && command.slot < 36;
         }
         return false;
     }
@@ -114,7 +107,7 @@ public final class MineThorBridgeServer {
         return "{\"type\":\"HELLO\",\"protocolVersion\":" + PROTOCOL_VERSION + "}";
     }
 
-    private static String snapshotMessage(MinecraftSnapshot snapshot, int lastAppliedCommandId, int selectedInventorySlot) {
+    private static String snapshotMessage(MinecraftSnapshot snapshot, int lastAppliedCommandId) {
         return "{\"type\":\"SNAPSHOT\",\"protocolVersion\":" + PROTOCOL_VERSION
                 + ",\"connected\":" + snapshot.connected
                 + ",\"lastAppliedCommandId\":" + lastAppliedCommandId
@@ -131,7 +124,7 @@ public final class MineThorBridgeServer {
                 + ",\"xpLevel\":" + snapshot.xpLevel
                 + "},\"inventory\":{"
                 + "\"selectedHotbarSlot\":" + snapshot.selectedHotbarSlot
-                + ",\"selectedInventorySlot\":" + selectedInventorySlot
+                + ",\"selectedInventorySlot\":" + snapshot.selectedInventorySlot
                 + "}}";
     }
 

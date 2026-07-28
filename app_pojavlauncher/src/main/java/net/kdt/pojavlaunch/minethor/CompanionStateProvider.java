@@ -9,8 +9,6 @@ public interface CompanionStateProvider {
 
     CompanionSnapshot selectHotbarSlot(int slot);
 
-    CompanionSnapshot selectInventorySlot(int slot);
-
     void setListener(Listener listener);
 
     void close();

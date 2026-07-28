@@ -172,7 +172,6 @@ public class ThorHudView extends View {
 
         int inventorySlot = inventorySlotIndexFromTouch(touchX, touchY);
         if (inventorySlot >= 0) {
-            controller.selectInventorySlot(inventorySlot);
             return;
         }
 

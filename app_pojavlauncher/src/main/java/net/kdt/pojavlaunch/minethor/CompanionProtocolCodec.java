@@ -64,12 +64,6 @@ public final class CompanionProtocolCodec {
         return message;
     }
 
-    public static JSONObject inventorySelectCommand(int commandId, int slot) throws JSONException {
-        JSONObject message = command("SELECT_INVENTORY_SLOT", commandId);
-        message.put("slot", slot);
-        return message;
-    }
-
     public static JSONObject helloMessage() throws JSONException {
         JSONObject message = new JSONObject();
         message.put("type", "HELLO");

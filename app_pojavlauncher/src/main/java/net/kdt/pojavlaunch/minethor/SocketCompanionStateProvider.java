@@ -30,8 +30,6 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
     private volatile Listener listener;
     private int pendingHotbarCommandId;
     private int pendingHotbarSlot;
-    private int pendingInventoryCommandId;
-    private int pendingInventorySlot;
     private Socket socket;
     private DataOutputStream output;
     private Thread worker;
@@ -49,22 +47,10 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
 
     @Override
     public CompanionSnapshot selectHotbarSlot(int slot) {
-        int commandId = sendCommand(slot, true);
+        int commandId = sendCommand(slot);
         synchronized (snapshotLock) {
             pendingHotbarCommandId = commandId;
             pendingHotbarSlot = slot;
-            snapshot = snapshotWithPendingSelections(snapshot);
-        }
-        notifyChanged();
-        return snapshot;
-    }
-
-    @Override
-    public CompanionSnapshot selectInventorySlot(int slot) {
-        int commandId = sendCommand(slot, false);
-        synchronized (snapshotLock) {
-            pendingInventoryCommandId = commandId;
-            pendingInventorySlot = slot;
             snapshot = snapshotWithPendingSelections(snapshot);
         }
         notifyChanged();
@@ -130,12 +116,10 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
         }
     }
 
-    private int sendCommand(int slot, boolean hotbar) {
+    private int sendCommand(int slot) {
         int commandId = commandIds.getAndIncrement();
         try {
-            JSONObject message = hotbar
-                    ? CompanionProtocolCodec.hotbarCommand(commandId, slot)
-                    : CompanionProtocolCodec.inventorySelectCommand(commandId, slot);
+            JSONObject message = CompanionProtocolCodec.hotbarCommand(commandId, slot);
             outgoingMessages.offer(message);
         } catch (JSONException e) {
             Log.d(TAG, "Cannot build companion command", e);
@@ -167,18 +151,12 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
         if (pendingHotbarCommandId <= lastAppliedCommandId) {
             pendingHotbarCommandId = 0;
         }
-        if (pendingInventoryCommandId <= lastAppliedCommandId) {
-            pendingInventoryCommandId = 0;
-        }
     }
 
     private CompanionSnapshot snapshotWithPendingSelections(CompanionSnapshot source) {
         InventorySnapshot inventory = source.inventory;
         if (pendingHotbarCommandId > source.lastAppliedCommandId) {
             inventory = inventory.withSelectedHotbarSlot(pendingHotbarSlot);
-        }
-        if (pendingInventoryCommandId > source.lastAppliedCommandId) {
-            inventory = inventory.withSelectedInventorySlot(pendingInventorySlot);
         }
         if (inventory == source.inventory) return source;
 

@@ -15,10 +15,6 @@ public class ThorCompanionController {
         provider.selectHotbarSlot(slot);
     }
 
-    public void selectInventorySlot(int slot) {
-        provider.selectInventorySlot(slot);
-    }
-
     public void setListener(CompanionStateProvider.Listener listener) {
         provider.setListener(listener);
     }
