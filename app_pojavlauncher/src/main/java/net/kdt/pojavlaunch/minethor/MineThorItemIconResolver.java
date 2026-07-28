@@ -183,6 +183,9 @@ public final class MineThorItemIconResolver {
         }
 
         String modelPath() {
+            if (path.startsWith("item/") || path.startsWith("block/")) {
+                return "assets/" + namespace + "/models/" + path + ".json";
+            }
             return "assets/" + namespace + "/models/item/" + path + ".json";
         }
 
