@@ -517,10 +517,10 @@
     <string name="import_modpack_hash">Hashing modpack file… (%s MB/ %s MB)</string>
     <string name="import_modpack_json">Reading modpack info…</string>
     <string name="import_modpack_copy">Copying modpack file to cache… (%s MB/ %s MB)</string>
-    <string name="minethor_probe_menu" translatable="false">MineThor display probe</string>
-    <string name="minethor_probe_activity_title" translatable="false">MineThor display probe</string>
-    <string name="minethor_probe_show" translatable="false">Show probe on secondary display</string>
-    <string name="minethor_probe_close" translatable="false">Close probe</string>
+    <string name="minethor_probe_menu" translatable="false">MineThor companion HUD</string>
+    <string name="minethor_companion_activity_title" translatable="false">MineThor companion HUD</string>
+    <string name="minethor_companion_show" translatable="false">Show HUD on secondary display</string>
+    <string name="minethor_companion_close" translatable="false">Close HUD</string>
     <string name="minethor_probe_display_count" translatable="false">Displays: %1$d</string>
     <string name="minethor_probe_display_row" translatable="false">Display %1$d: %2$s</string>
     <string name="minethor_probe_state" translatable="false">Presentation: %1$s</string>

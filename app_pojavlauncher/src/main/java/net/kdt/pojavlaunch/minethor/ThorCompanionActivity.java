@@ -18,12 +18,12 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import net.kdt.pojavlaunch.R;
 
-public class ThorProbeActivity extends AppCompatActivity implements DisplayManager.DisplayListener {
-    private static final String TAG = "MineThorProbe";
+public class ThorCompanionActivity extends AppCompatActivity implements DisplayManager.DisplayListener {
+    private static final String TAG = "MineThorCompanion";
 
     private DisplayManager displayManager;
     private TextView statusText;
-    private ThorProbePresentation presentation;
+    private ThorCompanionPresentation presentation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,13 +31,13 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
         displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         setContentView(createContentView());
         displayManager.registerDisplayListener(this, null);
-        showProbe();
+        showCompanion();
         updateStatus();
     }
 
     @Override
     protected void onDestroy() {
-        dismissProbe();
+        dismissCompanion();
         displayManager.unregisterDisplayListener(this);
         super.onDestroy();
     }
@@ -46,7 +46,7 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
     public void onDisplayAdded(int displayId) {
         Log.i(TAG, "Display added: " + displayId);
         runOnUiThread(() -> {
-            showProbe();
+            showCompanion();
             updateStatus();
         });
     }
@@ -56,7 +56,7 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
         Log.i(TAG, "Display removed: " + displayId);
         runOnUiThread(() -> {
             if (presentation != null && presentation.getDisplay().getDisplayId() == displayId) {
-                dismissProbe();
+                dismissCompanion();
             }
             updateStatus();
         });
@@ -85,9 +85,9 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
         ));
 
         Button showButton = new Button(this);
-        showButton.setText(R.string.minethor_probe_show);
+        showButton.setText(R.string.minethor_companion_show);
         showButton.setOnClickListener(v -> {
-            showProbe();
+            showCompanion();
             updateStatus();
         });
         layout.addView(showButton, new LinearLayout.LayoutParams(
@@ -96,9 +96,9 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
         ));
 
         Button closeButton = new Button(this);
-        closeButton.setText(R.string.minethor_probe_close);
+        closeButton.setText(R.string.minethor_companion_close);
         closeButton.setOnClickListener(v -> {
-            dismissProbe();
+            dismissCompanion();
             updateStatus();
         });
         layout.addView(closeButton, new LinearLayout.LayoutParams(
@@ -112,7 +112,7 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
     private void updateStatus() {
         Display[] displays = displayManager.getDisplays();
         StringBuilder builder = new StringBuilder();
-        builder.append(getString(R.string.minethor_probe_activity_title)).append('\n');
+        builder.append(getString(R.string.minethor_companion_activity_title)).append('\n');
         builder.append(getString(R.string.minethor_probe_display_count, displays.length)).append('\n');
         for (Display display : displays) {
             builder.append(getString(
@@ -128,7 +128,7 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
         statusText.setText(builder.toString());
     }
 
-    private void showProbe() {
+    private void showCompanion() {
         if (presentation != null) return;
 
         Display display = findSecondaryDisplay();
@@ -138,7 +138,7 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
         }
 
         try {
-            presentation = new ThorProbePresentation(this, display);
+            presentation = new ThorCompanionPresentation(this, display);
             presentation.setOnDismissListener(dialog -> {
                 Log.i(TAG, "Presentation dismissed");
                 presentation = null;
@@ -153,7 +153,7 @@ public class ThorProbeActivity extends AppCompatActivity implements DisplayManag
         }
     }
 
-    private void dismissProbe() {
+    private void dismissCompanion() {
         Presentation currentPresentation = presentation;
         if (currentPresentation == null) return;
         presentation = null;

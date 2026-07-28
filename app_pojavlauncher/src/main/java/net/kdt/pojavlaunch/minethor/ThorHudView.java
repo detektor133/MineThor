@@ -14,7 +14,7 @@ import androidx.annotation.Nullable;
 
 import net.kdt.pojavlaunch.R;
 
-public class ThorProbeView extends View {
+public class ThorHudView extends View {
     private static final int SLOT_COUNT = 9;
     private static final int INVENTORY_COLUMNS = 9;
     private static final int INVENTORY_ROWS = 4;
@@ -29,19 +29,18 @@ public class ThorProbeView extends View {
     private final Paint smallTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint touchPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Display display;
-    private CompanionSnapshot snapshot = MockCompanionState.create();
+    private final ThorCompanionController controller;
     private int pointerCount;
 
-    public ThorProbeView(Context context, Display display) {
+    public ThorHudView(Context context, ThorCompanionController controller) {
         super(context);
-        this.display = display;
+        this.controller = controller;
         init();
     }
 
-    public ThorProbeView(Context context, @Nullable AttributeSet attrs) {
+    public ThorHudView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        this.display = null;
+        this.controller = new ThorCompanionController(new MockCompanionStateProvider());
         init();
     }
 
@@ -93,6 +92,7 @@ public class ThorProbeView extends View {
     }
 
     private void drawHeader(Canvas canvas, float padding) {
+        CompanionSnapshot snapshot = controller.currentSnapshot();
         canvas.drawText(getResources().getString(R.string.minethor_hud_title), padding, padding, textPaint);
         String status = snapshot.connected
                 ? getResources().getString(R.string.minethor_hud_connected)
@@ -101,6 +101,7 @@ public class ThorProbeView extends View {
     }
 
     private void drawCompass(Canvas canvas, float padding) {
+        CompanionSnapshot snapshot = controller.currentSnapshot();
         float centerX = getWidth() - padding - 118f;
         float centerY = 100f;
         float radius = 58f;
@@ -114,7 +115,7 @@ public class ThorProbeView extends View {
     }
 
     private void drawStats(Canvas canvas, float padding) {
-        PlayerSnapshot player = snapshot.player;
+        PlayerSnapshot player = controller.currentSnapshot().player;
         float top = 220f;
         RectF panel = new RectF(padding, top, getWidth() - padding, top + 112f);
         canvas.drawRoundRect(panel, 8f, 8f, panelPaint);
@@ -127,6 +128,7 @@ public class ThorProbeView extends View {
     }
 
     private void drawInventory(Canvas canvas, float padding) {
+        InventorySnapshot inventory = controller.currentSnapshot().inventory;
         float top = 386f;
         float gap = 8f;
         float slotSize = inventorySlotSize(padding, gap);
@@ -137,7 +139,7 @@ public class ThorProbeView extends View {
                 int index = row * INVENTORY_COLUMNS + column;
                 float left = padding + column * (slotSize + gap);
                 float slotTop = top + row * (slotSize + gap);
-                Paint paint = snapshot.inventory.selectedInventorySlot == index ? activeSlotPaint : slotPaint;
+                Paint paint = inventory.selectedInventorySlot == index ? activeSlotPaint : slotPaint;
                 RectF rect = new RectF(left, slotTop, left + slotSize, slotTop + slotSize);
                 canvas.drawRoundRect(rect, 8f, 8f, paint);
             }
@@ -145,6 +147,7 @@ public class ThorProbeView extends View {
     }
 
     private void drawHotbar(Canvas canvas, float padding) {
+        InventorySnapshot inventory = controller.currentSnapshot().inventory;
         float gap = getWidth() * 0.012f;
         float slotSize = (getWidth() - padding * 2f - gap * (SLOT_COUNT - 1)) / SLOT_COUNT;
         float top = getHeight() - padding - slotSize - 46f;
@@ -153,7 +156,7 @@ public class ThorProbeView extends View {
         for (int index = 0; index < SLOT_COUNT; index++) {
             float left = padding + index * (slotSize + gap);
             RectF rect = new RectF(left, top, left + slotSize, top + slotSize);
-            canvas.drawRoundRect(rect, 8f, 8f, index == snapshot.inventory.selectedHotbarSlot ? activeSlotPaint : slotPaint);
+            canvas.drawRoundRect(rect, 8f, 8f, index == inventory.selectedHotbarSlot ? activeSlotPaint : slotPaint);
             canvas.drawText(String.valueOf(index + 1), left + slotSize * 0.42f, top + slotSize * 0.58f, textPaint);
         }
     }
@@ -161,22 +164,12 @@ public class ThorProbeView extends View {
     private void updateSelection(float touchX, float touchY) {
         int inventorySlot = inventorySlotIndexFromTouch(touchX, touchY);
         if (inventorySlot >= 0) {
-            snapshot = new CompanionSnapshot(
-                    snapshot.connected,
-                    snapshot.player,
-                    snapshot.inventory.withSelectedInventorySlot(inventorySlot)
-            );
+            controller.selectInventorySlot(inventorySlot);
             return;
         }
 
         int hotbarSlot = hotbarSlotIndexFromTouch(touchX, touchY);
-        if (hotbarSlot >= 0) {
-            snapshot = new CompanionSnapshot(
-                    snapshot.connected,
-                    snapshot.player,
-                    snapshot.inventory.withSelectedHotbarSlot(hotbarSlot)
-            );
-        }
+        if (hotbarSlot >= 0) controller.selectHotbarSlot(hotbarSlot);
     }
 
     private int inventorySlotIndexFromTouch(float touchX, float touchY) {
