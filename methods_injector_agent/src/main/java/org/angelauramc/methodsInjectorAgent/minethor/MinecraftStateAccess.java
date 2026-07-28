@@ -2,8 +2,8 @@ package org.angelauramc.methodsInjectorAgent.minethor;
 
 final class MinecraftStateAccess {
     private final MinecraftAdapter[] adapters = {
-            new MappedMinecraftAdapter(),
-            new Obfuscated1201MinecraftAdapter()
+            new DescriptorMinecraftAdapter(),
+            new MappedMinecraftAdapter()
     };
     private MinecraftAdapter activeAdapter;
 
