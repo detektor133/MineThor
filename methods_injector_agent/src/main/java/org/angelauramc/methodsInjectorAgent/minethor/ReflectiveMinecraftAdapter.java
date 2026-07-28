@@ -2,6 +2,7 @@ package org.angelauramc.methodsInjectorAgent.minethor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.List;
 
 abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
     @Override
@@ -35,7 +36,10 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
                     intFrom(player, 0, armorAccessors()),
                     intField(player, 0, xpLevelFields()),
                     inventory == null ? -1 : intField(inventory, -1, selectedSlotFields()),
-                    -1
+                    -1,
+                    inventory == null ? MinecraftSnapshot.emptySlots(36) : inventorySlots(inventory, mainInventoryFields(), 36),
+                    inventory == null ? MinecraftSnapshot.emptySlots(4) : inventorySlots(inventory, armorInventoryFields(), 4),
+                    inventory == null ? MinecraftSnapshot.emptySlots(1) : inventorySlots(inventory, offhandInventoryFields(), 1)
             );
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             return MinecraftSnapshot.disconnected();
@@ -78,6 +82,26 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
     protected abstract String[] inventoryClassNames();
 
     protected abstract String[] selectedSlotFields();
+
+    protected abstract String[] mainInventoryFields();
+
+    protected abstract String[] armorInventoryFields();
+
+    protected abstract String[] offhandInventoryFields();
+
+    protected abstract String[] itemStackIsEmptyMethods();
+
+    protected abstract String[] itemStackCountMethods();
+
+    protected abstract String[] itemStackDescriptionIdMethods();
+
+    protected abstract String[] itemStackHoverNameMethods();
+
+    protected abstract String[] itemStackDamageMethods();
+
+    protected abstract String[] itemStackMaxDamageMethods();
+
+    protected abstract String[] componentStringMethods();
 
     protected abstract String[] xAccessors();
 
@@ -141,6 +165,66 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
         Object value = invokeFirst(target, names);
         if (value instanceof Number) return ((Number) value).intValue();
         return fallback;
+    }
+
+    private InventorySlotSnapshot[] inventorySlots(Object inventory, String[] fields, int count) throws ReflectiveOperationException {
+        InventorySlotSnapshot[] slots = MinecraftSnapshot.emptySlots(count);
+        Object list = fieldValue(inventory, fields);
+        if (!(list instanceof List)) return slots;
+
+        List<?> stacks = (List<?>) list;
+        int size = Math.min(stacks.size(), count);
+        for (int i = 0; i < size; i++) {
+            slots[i] = itemStackSlot(i, stacks.get(i));
+        }
+        return slots;
+    }
+
+    private InventorySlotSnapshot itemStackSlot(int index, Object itemStack) throws ReflectiveOperationException {
+        if (itemStack == null || booleanFrom(itemStack, true, itemStackIsEmptyMethods())) {
+            return InventorySlotSnapshot.empty(index);
+        }
+
+        int count = intFrom(itemStack, 0, itemStackCountMethods());
+        String descriptionId = stringFrom(itemStack, "", itemStackDescriptionIdMethods());
+        String itemId = itemIdFromDescriptionId(descriptionId);
+        String name = componentString(invokeFirst(itemStack, itemStackHoverNameMethods()));
+        int damage = intFrom(itemStack, 0, itemStackDamageMethods());
+        int maxDamage = intFrom(itemStack, 0, itemStackMaxDamageMethods());
+        return new InventorySlotSnapshot(index, itemId, name, count, damage, maxDamage);
+    }
+
+    private static boolean booleanFrom(Object target, boolean fallback, String... names) throws ReflectiveOperationException {
+        Object value = invokeFirst(target, names);
+        if (value instanceof Boolean) return (Boolean) value;
+        return fallback;
+    }
+
+    private static String stringFrom(Object target, String fallback, String... names) throws ReflectiveOperationException {
+        Object value = invokeFirst(target, names);
+        if (value instanceof String) return (String) value;
+        return fallback;
+    }
+
+    private String componentString(Object component) throws ReflectiveOperationException {
+        String value = stringFrom(component, "", componentStringMethods());
+        if (!value.isEmpty()) return value;
+        return component == null ? "" : component.toString();
+    }
+
+    private static String itemIdFromDescriptionId(String descriptionId) {
+        String itemPrefix = "item.";
+        String blockPrefix = "block.";
+        String value = descriptionId;
+        if (value.startsWith(itemPrefix)) {
+            value = value.substring(itemPrefix.length());
+        } else if (value.startsWith(blockPrefix)) {
+            value = value.substring(blockPrefix.length());
+        }
+
+        int namespaceEnd = value.indexOf('.');
+        if (namespaceEnd < 0) return value;
+        return value.substring(0, namespaceEnd) + ":" + value.substring(namespaceEnd + 1).replace('.', '_');
     }
 
     private static int roundedDouble(Object target, int fallback, String... names) throws ReflectiveOperationException {

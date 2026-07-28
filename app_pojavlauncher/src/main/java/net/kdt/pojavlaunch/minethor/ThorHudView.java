@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.minethor;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -17,7 +18,7 @@ import net.kdt.pojavlaunch.R;
 public class ThorHudView extends View {
     private static final int SLOT_COUNT = 9;
     private static final int INVENTORY_COLUMNS = 9;
-    private static final int INVENTORY_ROWS = 4;
+    private static final int INVENTORY_ROWS = 3;
 
     private final Paint backgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint panelPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -143,11 +144,13 @@ public class ThorHudView extends View {
         for (int row = 0; row < INVENTORY_ROWS; row++) {
             for (int column = 0; column < INVENTORY_COLUMNS; column++) {
                 int index = row * INVENTORY_COLUMNS + column;
+                int inventoryIndex = index + SLOT_COUNT;
                 float left = padding + column * (slotSize + gap);
                 float slotTop = top + row * (slotSize + gap);
-                Paint paint = inventory.selectedInventorySlot == index ? activeSlotPaint : slotPaint;
+                Paint paint = inventory.selectedInventorySlot == inventoryIndex ? activeSlotPaint : slotPaint;
                 RectF rect = new RectF(left, slotTop, left + slotSize, slotTop + slotSize);
                 canvas.drawRoundRect(rect, 8f, 8f, paint);
+                drawSlotContent(canvas, inventory.mainSlots[inventoryIndex], rect);
             }
         }
     }
@@ -163,8 +166,34 @@ public class ThorHudView extends View {
             float left = padding + index * (slotSize + gap);
             RectF rect = new RectF(left, top, left + slotSize, top + slotSize);
             canvas.drawRoundRect(rect, 8f, 8f, index == inventory.selectedHotbarSlot ? activeSlotPaint : slotPaint);
-            canvas.drawText(String.valueOf(index + 1), left + slotSize * 0.42f, top + slotSize * 0.58f, textPaint);
+            drawSlotContent(canvas, inventory.mainSlots[index], rect);
         }
+    }
+
+    private void drawSlotContent(Canvas canvas, InventorySlotSnapshot slot, RectF rect) {
+        if (slot == null || slot.isEmpty()) return;
+
+        Bitmap icon = MineThorItemIconResolver.iconFor(slot.itemId);
+        float inset = rect.width() * 0.14f;
+        if (icon != null) {
+            canvas.drawBitmap(icon, null, new RectF(rect.left + inset, rect.top + inset, rect.right - inset, rect.bottom - inset), null);
+        } else {
+            String fallback = fallbackItemText(slot.itemId);
+            canvas.drawText(fallback, rect.left + 10f, rect.top + rect.height() * 0.55f, smallTextPaint);
+        }
+
+        if (slot.count > 1) {
+            String count = String.valueOf(slot.count);
+            float textWidth = smallTextPaint.measureText(count);
+            canvas.drawText(count, rect.right - textWidth - 8f, rect.bottom - 8f, smallTextPaint);
+        }
+    }
+
+    private static String fallbackItemText(String itemId) {
+        int separator = itemId.indexOf(':');
+        String path = separator < 0 ? itemId : itemId.substring(separator + 1);
+        if (path.length() <= 3) return path;
+        return path.substring(0, 3);
     }
 
     private void updateSelection(float touchX, float touchY) {
@@ -192,7 +221,7 @@ public class ThorHudView extends View {
                 float left = padding + column * (slotSize + gap);
                 float slotTop = top + row * (slotSize + gap);
                 if (touchX >= left && touchX <= left + slotSize && touchY >= slotTop && touchY <= slotTop + slotSize) {
-                    return row * INVENTORY_COLUMNS + column;
+                    return row * INVENTORY_COLUMNS + column + SLOT_COUNT;
                 }
             }
         }

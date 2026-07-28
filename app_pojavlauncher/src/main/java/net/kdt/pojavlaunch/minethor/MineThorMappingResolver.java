@@ -24,7 +24,7 @@ public final class MineThorMappingResolver {
     private static final String TAG = "MineThorMapping";
     private static final String DOWNLOAD_CLIENT_MAPPINGS = "client_mappings";
     private static final String DESCRIPTOR_NAME = "descriptor.properties";
-    private static final String DESCRIPTOR_SCHEMA_VERSION = "2";
+    private static final String DESCRIPTOR_SCHEMA_VERSION = "3";
 
     private MineThorMappingResolver() {
     }
@@ -131,8 +131,10 @@ public final class MineThorMappingResolver {
         String entityClass = index.className("net.minecraft.world.entity.Entity");
         String livingEntityClass = index.className("net.minecraft.world.entity.LivingEntity");
         String inventoryClass = index.className("net.minecraft.world.entity.player.Inventory");
+        String itemStackClass = index.className("net.minecraft.world.item.ItemStack");
+        String componentClass = index.className("net.minecraft.network.chat.Component");
 
-        if (!allPresent(clientClass, playerClass, entityClass, livingEntityClass, inventoryClass)) {
+        if (!allPresent(clientClass, playerClass, entityClass, livingEntityClass, inventoryClass, itemStackClass, componentClass)) {
             Log.i(TAG, "Mappings are missing required classes for " + versionId);
             return null;
         }
@@ -147,6 +149,16 @@ public final class MineThorMappingResolver {
         descriptor.setProperty("inventory.fields", index.fieldName("net.minecraft.world.entity.player.Player", "inventory"));
         descriptor.setProperty("inventory.classNames", inventoryClass);
         descriptor.setProperty("selectedSlot.fields", index.fieldName("net.minecraft.world.entity.player.Inventory", "selected"));
+        descriptor.setProperty("mainInventory.fields", index.fieldName("net.minecraft.world.entity.player.Inventory", "items"));
+        descriptor.setProperty("armorInventory.fields", index.fieldName("net.minecraft.world.entity.player.Inventory", "armor"));
+        descriptor.setProperty("offhandInventory.fields", index.fieldName("net.minecraft.world.entity.player.Inventory", "offhand"));
+        descriptor.setProperty("itemStack.isEmptyMethods", index.methodName("net.minecraft.world.item.ItemStack", "isEmpty"));
+        descriptor.setProperty("itemStack.countMethods", index.methodName("net.minecraft.world.item.ItemStack", "getCount"));
+        descriptor.setProperty("itemStack.descriptionIdMethods", index.methodName("net.minecraft.world.item.ItemStack", "getDescriptionId"));
+        descriptor.setProperty("itemStack.hoverNameMethods", index.methodName("net.minecraft.world.item.ItemStack", "getHoverName"));
+        descriptor.setProperty("itemStack.damageMethods", index.methodName("net.minecraft.world.item.ItemStack", "getDamageValue"));
+        descriptor.setProperty("itemStack.maxDamageMethods", index.methodName("net.minecraft.world.item.ItemStack", "getMaxDamage"));
+        descriptor.setProperty("component.stringMethods", index.methodName("net.minecraft.network.chat.Component", "getString"));
         descriptor.setProperty("x.accessors", index.methodName("net.minecraft.world.entity.Entity", "getX"));
         descriptor.setProperty("y.accessors", index.methodName("net.minecraft.world.entity.Entity", "getY"));
         descriptor.setProperty("z.accessors", index.methodName("net.minecraft.world.entity.Entity", "getZ"));
@@ -172,6 +184,16 @@ public final class MineThorMappingResolver {
                 descriptor.getProperty("player.fields"),
                 descriptor.getProperty("inventory.classNames"),
                 descriptor.getProperty("selectedSlot.fields"),
+                descriptor.getProperty("mainInventory.fields"),
+                descriptor.getProperty("armorInventory.fields"),
+                descriptor.getProperty("offhandInventory.fields"),
+                descriptor.getProperty("itemStack.isEmptyMethods"),
+                descriptor.getProperty("itemStack.countMethods"),
+                descriptor.getProperty("itemStack.descriptionIdMethods"),
+                descriptor.getProperty("itemStack.hoverNameMethods"),
+                descriptor.getProperty("itemStack.damageMethods"),
+                descriptor.getProperty("itemStack.maxDamageMethods"),
+                descriptor.getProperty("component.stringMethods"),
                 descriptor.getProperty("x.accessors"),
                 descriptor.getProperty("y.accessors"),
                 descriptor.getProperty("z.accessors"),

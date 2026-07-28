@@ -1,6 +1,7 @@
 package net.kdt.pojavlaunch.minethor;
 
 import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.DataInputStream;
@@ -9,7 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public final class CompanionProtocolCodec {
-    public static final int PROTOCOL_VERSION = 2;
+    public static final int PROTOCOL_VERSION = 3;
     private static final int MAX_MESSAGE_BYTES = 64 * 1024;
 
     private CompanionProtocolCodec() {
@@ -112,7 +113,10 @@ public final class CompanionProtocolCodec {
     private static InventorySnapshot inventoryFromJson(InventorySnapshot current, JSONObject message) {
         return new InventorySnapshot(
                 message.optInt("selectedHotbarSlot", current.selectedHotbarSlot),
-                message.optInt("selectedInventorySlot", current.selectedInventorySlot)
+                message.optInt("selectedInventorySlot", current.selectedInventorySlot),
+                slotsFromJson(message.optJSONArray("mainSlots"), current.mainSlots, InventorySnapshot.MAIN_SLOT_COUNT),
+                slotsFromJson(message.optJSONArray("armorSlots"), current.armorSlots, InventorySnapshot.ARMOR_SLOT_COUNT),
+                slotsFromJson(message.optJSONArray("offhandSlots"), current.offhandSlots, InventorySnapshot.OFFHAND_SLOT_COUNT)
         );
     }
 
@@ -135,6 +139,54 @@ public final class CompanionProtocolCodec {
         JSONObject message = new JSONObject();
         message.put("selectedHotbarSlot", inventory.selectedHotbarSlot);
         message.put("selectedInventorySlot", inventory.selectedInventorySlot);
+        message.put("mainSlots", slotsToJson(inventory.mainSlots));
+        message.put("armorSlots", slotsToJson(inventory.armorSlots));
+        message.put("offhandSlots", slotsToJson(inventory.offhandSlots));
         return message;
+    }
+
+    private static InventorySlotSnapshot[] slotsFromJson(JSONArray array, InventorySlotSnapshot[] current, int size) {
+        InventorySlotSnapshot[] slots = new InventorySlotSnapshot[size];
+        for (int i = 0; i < size; i++) {
+            slots[i] = current != null && i < current.length && current[i] != null
+                    ? current[i]
+                    : new InventorySlotSnapshot(i, "", "", 0, 0, 0);
+        }
+        if (array == null) return slots;
+
+        int length = Math.min(array.length(), size);
+        for (int i = 0; i < length; i++) {
+            JSONObject slot = array.optJSONObject(i);
+            if (slot == null) continue;
+
+            slots[i] = new InventorySlotSnapshot(
+                    slot.optInt("index", i),
+                    slot.optString("itemId", ""),
+                    slot.optString("name", ""),
+                    slot.optInt("count", 0),
+                    slot.optInt("damage", 0),
+                    slot.optInt("maxDamage", 0)
+            );
+        }
+        return slots;
+    }
+
+    private static JSONArray slotsToJson(InventorySlotSnapshot[] slots) throws JSONException {
+        JSONArray array = new JSONArray();
+        if (slots == null) return array;
+
+        for (InventorySlotSnapshot slot : slots) {
+            JSONObject message = new JSONObject();
+            if (slot != null) {
+                message.put("index", slot.index);
+                message.put("itemId", slot.itemId);
+                message.put("name", slot.name);
+                message.put("count", slot.count);
+                message.put("damage", slot.damage);
+                message.put("maxDamage", slot.maxDamage);
+            }
+            array.put(message);
+        }
+        return array;
     }
 }

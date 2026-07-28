@@ -11,6 +11,16 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     private static final String[] INVENTORY_FIELDS = {"inventory", "field_71071_by", "f_36095_"};
     private static final String[] INVENTORY_CLASS_NAMES = {};
     private static final String[] SELECTED_SLOT_FIELDS = {"selected", "selectedSlot", "currentItem", "field_7545", "f_35977_"};
+    private static final String[] MAIN_INVENTORY_FIELDS = {"items", "main", "field_7547", "f_35974_"};
+    private static final String[] ARMOR_INVENTORY_FIELDS = {"armor", "armorItems", "field_7548", "f_35975_"};
+    private static final String[] OFFHAND_INVENTORY_FIELDS = {"offhand", "offhandItems", "field_7544", "f_35976_"};
+    private static final String[] ITEM_STACK_IS_EMPTY_METHODS = {"isEmpty", "method_7960", "m_41619_"};
+    private static final String[] ITEM_STACK_COUNT_METHODS = {"getCount", "method_7947", "m_41613_"};
+    private static final String[] ITEM_STACK_DESCRIPTION_ID_METHODS = {"getDescriptionId", "method_7866", "m_41786_"};
+    private static final String[] ITEM_STACK_HOVER_NAME_METHODS = {"getHoverName", "getName", "method_7964", "m_41786_"};
+    private static final String[] ITEM_STACK_DAMAGE_METHODS = {"getDamageValue", "getDamage", "method_7919", "m_41773_"};
+    private static final String[] ITEM_STACK_MAX_DAMAGE_METHODS = {"getMaxDamage", "method_7936", "m_41776_"};
+    private static final String[] COMPONENT_STRING_METHODS = {"getString", "method_10851"};
     private static final String[] X_ACCESSORS = {"getX", "method_23317", "m_20185_"};
     private static final String[] Y_ACCESSORS = {"getY", "method_23318", "m_20186_"};
     private static final String[] Z_ACCESSORS = {"getZ", "method_23321", "m_20189_"};
@@ -60,6 +70,56 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     @Override
     protected String[] selectedSlotFields() {
         return SELECTED_SLOT_FIELDS;
+    }
+
+    @Override
+    protected String[] mainInventoryFields() {
+        return MAIN_INVENTORY_FIELDS;
+    }
+
+    @Override
+    protected String[] armorInventoryFields() {
+        return ARMOR_INVENTORY_FIELDS;
+    }
+
+    @Override
+    protected String[] offhandInventoryFields() {
+        return OFFHAND_INVENTORY_FIELDS;
+    }
+
+    @Override
+    protected String[] itemStackIsEmptyMethods() {
+        return ITEM_STACK_IS_EMPTY_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackCountMethods() {
+        return ITEM_STACK_COUNT_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackDescriptionIdMethods() {
+        return ITEM_STACK_DESCRIPTION_ID_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackHoverNameMethods() {
+        return ITEM_STACK_HOVER_NAME_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackDamageMethods() {
+        return ITEM_STACK_DAMAGE_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackMaxDamageMethods() {
+        return ITEM_STACK_MAX_DAMAGE_METHODS;
+    }
+
+    @Override
+    protected String[] componentStringMethods() {
+        return COMPONENT_STRING_METHODS;
     }
 
     @Override

@@ -12,7 +12,7 @@ import java.net.SocketTimeoutException;
 public final class MineThorBridgeServer {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 25566;
-    private static final int PROTOCOL_VERSION = 2;
+    private static final int PROTOCOL_VERSION = 3;
     private static final int ACCEPT_TIMEOUT_MS = 250;
     private static final int CLIENT_READ_TIMEOUT_MS = 50;
     private static final int SNAPSHOT_INTERVAL_MS = 100;
@@ -125,7 +125,60 @@ public final class MineThorBridgeServer {
                 + "},\"inventory\":{"
                 + "\"selectedHotbarSlot\":" + snapshot.selectedHotbarSlot
                 + ",\"selectedInventorySlot\":" + snapshot.selectedInventorySlot
+                + ",\"mainSlots\":" + slotsMessage(snapshot.mainSlots)
+                + ",\"armorSlots\":" + slotsMessage(snapshot.armorSlots)
+                + ",\"offhandSlots\":" + slotsMessage(snapshot.offhandSlots)
                 + "}}";
+    }
+
+    private static String slotsMessage(InventorySlotSnapshot[] slots) {
+        StringBuilder builder = new StringBuilder("[");
+        for (int i = 0; i < slots.length; i++) {
+            if (i > 0) builder.append(',');
+            builder.append(slotMessage(slots[i]));
+        }
+        return builder.append(']').toString();
+    }
+
+    private static String slotMessage(InventorySlotSnapshot slot) {
+        if (slot == null) slot = InventorySlotSnapshot.empty(0);
+        return "{\"index\":" + slot.index
+                + ",\"itemId\":\"" + escapeJson(slot.itemId) + "\""
+                + ",\"name\":\"" + escapeJson(slot.name) + "\""
+                + ",\"count\":" + slot.count
+                + ",\"damage\":" + slot.damage
+                + ",\"maxDamage\":" + slot.maxDamage
+                + "}";
+    }
+
+    private static String escapeJson(String value) {
+        if (value == null || value.isEmpty()) return "";
+
+        StringBuilder builder = new StringBuilder(value.length());
+        for (int i = 0; i < value.length(); i++) {
+            char c = value.charAt(i);
+            switch (c) {
+                case '\\':
+                    builder.append("\\\\");
+                    break;
+                case '"':
+                    builder.append("\\\"");
+                    break;
+                case '\n':
+                    builder.append("\\n");
+                    break;
+                case '\r':
+                    builder.append("\\r");
+                    break;
+                case '\t':
+                    builder.append("\\t");
+                    break;
+                default:
+                    builder.append(c);
+                    break;
+            }
+        }
+        return builder.toString();
     }
 
     private static String readMessage(DataInputStream input) throws IOException {

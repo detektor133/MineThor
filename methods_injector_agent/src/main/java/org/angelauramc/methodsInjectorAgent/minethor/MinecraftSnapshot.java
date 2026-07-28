@@ -14,6 +14,9 @@ final class MinecraftSnapshot {
     final int xpLevel;
     final int selectedHotbarSlot;
     final int selectedInventorySlot;
+    final InventorySlotSnapshot[] mainSlots;
+    final InventorySlotSnapshot[] armorSlots;
+    final InventorySlotSnapshot[] offhandSlots;
 
     MinecraftSnapshot(
             boolean connected,
@@ -28,7 +31,10 @@ final class MinecraftSnapshot {
             int armor,
             int xpLevel,
             int selectedHotbarSlot,
-            int selectedInventorySlot
+            int selectedInventorySlot,
+            InventorySlotSnapshot[] mainSlots,
+            InventorySlotSnapshot[] armorSlots,
+            InventorySlotSnapshot[] offhandSlots
     ) {
         this.connected = connected;
         this.x = x;
@@ -43,9 +49,20 @@ final class MinecraftSnapshot {
         this.xpLevel = xpLevel;
         this.selectedHotbarSlot = selectedHotbarSlot;
         this.selectedInventorySlot = selectedInventorySlot;
+        this.mainSlots = mainSlots;
+        this.armorSlots = armorSlots;
+        this.offhandSlots = offhandSlots;
     }
 
     static MinecraftSnapshot disconnected() {
-        return new MinecraftSnapshot(false, 0, 0, 0, 0, 0, 20, 0, 20, 0, 0, -1, -1);
+        return new MinecraftSnapshot(false, 0, 0, 0, 0, 0, 20, 0, 20, 0, 0, -1, -1, emptySlots(36), emptySlots(4), emptySlots(1));
+    }
+
+    static InventorySlotSnapshot[] emptySlots(int count) {
+        InventorySlotSnapshot[] slots = new InventorySlotSnapshot[count];
+        for (int i = 0; i < count; i++) {
+            slots[i] = InventorySlotSnapshot.empty(i);
+        }
+        return slots;
     }
 }

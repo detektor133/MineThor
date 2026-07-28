@@ -55,6 +55,56 @@ final class DescriptorMinecraftAdapter extends ReflectiveMinecraftAdapter {
     }
 
     @Override
+    protected String[] mainInventoryFields() {
+        return values("mainInventory.fields");
+    }
+
+    @Override
+    protected String[] armorInventoryFields() {
+        return values("armorInventory.fields");
+    }
+
+    @Override
+    protected String[] offhandInventoryFields() {
+        return values("offhandInventory.fields");
+    }
+
+    @Override
+    protected String[] itemStackIsEmptyMethods() {
+        return values("itemStack.isEmptyMethods");
+    }
+
+    @Override
+    protected String[] itemStackCountMethods() {
+        return values("itemStack.countMethods");
+    }
+
+    @Override
+    protected String[] itemStackDescriptionIdMethods() {
+        return values("itemStack.descriptionIdMethods");
+    }
+
+    @Override
+    protected String[] itemStackHoverNameMethods() {
+        return values("itemStack.hoverNameMethods");
+    }
+
+    @Override
+    protected String[] itemStackDamageMethods() {
+        return values("itemStack.damageMethods");
+    }
+
+    @Override
+    protected String[] itemStackMaxDamageMethods() {
+        return values("itemStack.maxDamageMethods");
+    }
+
+    @Override
+    protected String[] componentStringMethods() {
+        return values("component.stringMethods");
+    }
+
+    @Override
     protected String[] xAccessors() {
         return values("x.accessors");
     }
