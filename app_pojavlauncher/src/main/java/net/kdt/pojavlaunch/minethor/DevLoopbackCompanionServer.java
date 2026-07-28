@@ -42,7 +42,11 @@ public class DevLoopbackCompanionServer {
     }
 
     private void serverLoop() {
-        try (ServerSocket server = new ServerSocket(CompanionEndpoint.PORT, 1, InetAddress.getLoopbackAddress())) {
+        try (ServerSocket server = new ServerSocket(
+                CompanionEndpoint.PORT,
+                1,
+                InetAddress.getByName(CompanionEndpoint.LOOPBACK_HOST)
+        )) {
             serverSocket = server;
             server.setSoTimeout(ACCEPT_TIMEOUT_MS);
             Log.i(TAG, "Dev companion server listening on " + CompanionEndpoint.LOOPBACK_HOST + ":" + CompanionEndpoint.PORT);

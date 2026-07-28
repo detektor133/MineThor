@@ -106,8 +106,12 @@ public class ThorHudView extends View {
         float centerX = getWidth() - padding - 118f;
         float centerY = 100f;
         float radius = 58f;
+        float needleLength = 48f;
+        double yawRadians = Math.toRadians(snapshot.player.yaw);
+        float needleEndX = centerX + (float) Math.sin(yawRadians) * needleLength;
+        float needleEndY = centerY - (float) Math.cos(yawRadians) * needleLength;
         canvas.drawCircle(centerX, centerY, radius, compassPaint);
-        canvas.drawLine(centerX, centerY, centerX + 30f, centerY - 38f, compassNeedlePaint);
+        canvas.drawLine(centerX, centerY, needleEndX, needleEndY, compassNeedlePaint);
         canvas.drawText("N", centerX - 10f, centerY - radius - 16f, textPaint);
         canvas.drawText("E", centerX + radius + 16f, centerY + 10f, smallTextPaint);
         canvas.drawText("S", centerX - 8f, centerY + radius + 34f, smallTextPaint);

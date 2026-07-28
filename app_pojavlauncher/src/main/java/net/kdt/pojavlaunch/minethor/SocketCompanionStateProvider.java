@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SocketCompanionStateProvider implements CompanionStateProvider {
@@ -20,6 +22,7 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
 
     private final String host;
     private final int port;
+    private final LinkedBlockingQueue<JSONObject> outgoingMessages = new LinkedBlockingQueue<>();
     private final AtomicInteger requestIds = new AtomicInteger(1);
     private volatile boolean closed;
     private volatile CompanionSnapshot snapshot = MockCompanionState.create();
@@ -93,6 +96,7 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
                 }
 
                 socket.connect(new InetSocketAddress(address, port), CONNECT_TIMEOUT_MS);
+                socket.setSoTimeout(CONNECT_TIMEOUT_MS);
                 DataOutputStream socketOutput = new DataOutputStream(socket.getOutputStream());
                 output = socketOutput;
                 snapshot = new CompanionSnapshot(true, snapshot.player, snapshot.inventory);
@@ -100,9 +104,8 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
 
                 DataInputStream input = new DataInputStream(socket.getInputStream());
                 while (!closed && !socket.isClosed()) {
-                    JSONObject message = CompanionProtocolCodec.readMessage(input);
-                    snapshot = CompanionProtocolCodec.applyMessage(snapshot, message);
-                    notifyChanged();
+                    writePendingMessages(socketOutput);
+                    readSnapshotIfAvailable(input);
                 }
             } catch (IOException | JSONException e) {
                 if (!closed) Log.d(TAG, "Companion socket unavailable", e);
@@ -119,19 +122,30 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
     }
 
     private void sendCommand(int slot, boolean hotbar) {
-        DataOutputStream currentOutput = output;
-        if (currentOutput == null) return;
-
         try {
             int requestId = requestIds.getAndIncrement();
             JSONObject message = hotbar
                     ? CompanionProtocolCodec.hotbarCommand(requestId, slot)
                     : CompanionProtocolCodec.inventorySelectCommand(requestId, slot);
-            synchronized (currentOutput) {
-                CompanionProtocolCodec.writeMessage(currentOutput, message);
-            }
-        } catch (IOException | JSONException e) {
-            Log.d(TAG, "Cannot send companion command", e);
+            outgoingMessages.offer(message);
+        } catch (JSONException e) {
+            Log.d(TAG, "Cannot build companion command", e);
+        }
+    }
+
+    private void writePendingMessages(DataOutputStream socketOutput) throws IOException {
+        JSONObject message;
+        while ((message = outgoingMessages.poll()) != null) {
+            CompanionProtocolCodec.writeMessage(socketOutput, message);
+        }
+    }
+
+    private void readSnapshotIfAvailable(DataInputStream input) throws IOException, JSONException {
+        try {
+            JSONObject message = CompanionProtocolCodec.readMessage(input);
+            snapshot = CompanionProtocolCodec.applyMessage(snapshot, message);
+            notifyChanged();
+        } catch (SocketTimeoutException ignored) {
         }
     }
 
