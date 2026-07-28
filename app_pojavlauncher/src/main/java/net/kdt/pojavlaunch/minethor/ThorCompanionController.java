@@ -19,6 +19,10 @@ public class ThorCompanionController {
         provider.selectInventorySlot(slot);
     }
 
+    public void setListener(CompanionStateProvider.Listener listener) {
+        provider.setListener(listener);
+    }
+
     public void close() {
         provider.close();
     }

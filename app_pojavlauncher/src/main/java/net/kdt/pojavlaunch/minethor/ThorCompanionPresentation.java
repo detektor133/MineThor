@@ -8,6 +8,7 @@ import android.view.Display;
 
 public class ThorCompanionPresentation extends Presentation {
     private static final String TAG = "MineThorCompanion";
+    private ThorCompanionController controller;
 
     public ThorCompanionPresentation(Context outerContext, Display display) {
         super(outerContext, display);
@@ -17,7 +18,14 @@ public class ThorCompanionPresentation extends Presentation {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.i(TAG, "Presentation created on display " + getDisplay().getDisplayId());
-        CompanionStateProvider provider = new MockCompanionStateProvider();
-        setContentView(new ThorHudView(getContext(), new ThorCompanionController(provider)));
+        CompanionStateProvider provider = new SocketCompanionStateProvider("127.0.0.1", 25566);
+        controller = new ThorCompanionController(provider);
+        setContentView(new ThorHudView(getContext(), controller));
+    }
+
+    @Override
+    protected void onStop() {
+        if (controller != null) controller.close();
+        super.onStop();
     }
 }

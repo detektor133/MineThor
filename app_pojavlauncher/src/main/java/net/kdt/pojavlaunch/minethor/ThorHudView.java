@@ -36,6 +36,7 @@ public class ThorHudView extends View {
         super(context);
         this.controller = controller;
         init();
+        this.controller.setListener(this::postInvalidate);
     }
 
     public ThorHudView(Context context, @Nullable AttributeSet attrs) {
