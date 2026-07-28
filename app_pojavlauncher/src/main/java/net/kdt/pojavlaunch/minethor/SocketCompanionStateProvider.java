@@ -45,24 +45,12 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
     @Override
     public CompanionSnapshot selectHotbarSlot(int slot) {
         sendCommand(slot, true);
-        snapshot = new CompanionSnapshot(
-                snapshot.connected,
-                snapshot.player,
-                snapshot.inventory.withSelectedHotbarSlot(slot)
-        );
-        notifyChanged();
         return snapshot;
     }
 
     @Override
     public CompanionSnapshot selectInventorySlot(int slot) {
         sendCommand(slot, false);
-        snapshot = new CompanionSnapshot(
-                snapshot.connected,
-                snapshot.player,
-                snapshot.inventory.withSelectedInventorySlot(slot)
-        );
-        notifyChanged();
         return snapshot;
     }
 

@@ -76,12 +76,16 @@ public class DevLoopbackCompanionServer {
             long lastSnapshotAt = 0L;
             while (!closed && !acceptedSocket.isClosed()) {
                 long now = System.currentTimeMillis();
+                boolean commandApplied = readCommandIfAvailable(input);
+                if (commandApplied) {
+                    CompanionProtocolCodec.writeMessage(output, CompanionProtocolCodec.snapshotMessage(snapshot));
+                    lastSnapshotAt = now;
+                }
                 if (now - lastSnapshotAt >= SNAPSHOT_INTERVAL_MS) {
                     snapshot = advanceSnapshot(snapshot);
                     CompanionProtocolCodec.writeMessage(output, CompanionProtocolCodec.snapshotMessage(snapshot));
                     lastSnapshotAt = now;
                 }
-                readCommandIfAvailable(input);
             }
         } catch (IOException | JSONException e) {
             if (!closed) Log.d(TAG, "Dev companion client disconnected", e);
@@ -90,7 +94,7 @@ public class DevLoopbackCompanionServer {
         }
     }
 
-    private void readCommandIfAvailable(DataInputStream input) throws IOException, JSONException {
+    private boolean readCommandIfAvailable(DataInputStream input) throws IOException, JSONException {
         try {
             JSONObject command = CompanionProtocolCodec.readMessage(input);
             String type = command.optString("type", "");
@@ -100,15 +104,18 @@ public class DevLoopbackCompanionServer {
                         snapshot.player,
                         snapshot.inventory.withSelectedHotbarSlot(command.optInt("slot", snapshot.inventory.selectedHotbarSlot))
                 );
+                return true;
             } else if ("SELECT_INVENTORY_SLOT".equals(type)) {
                 snapshot = new CompanionSnapshot(
                         snapshot.connected,
                         snapshot.player,
                         snapshot.inventory.withSelectedInventorySlot(command.optInt("slot", snapshot.inventory.selectedInventorySlot))
                 );
+                return true;
             }
         } catch (SocketTimeoutException ignored) {
         }
+        return false;
     }
 
     private CompanionSnapshot advanceSnapshot(CompanionSnapshot current) {
