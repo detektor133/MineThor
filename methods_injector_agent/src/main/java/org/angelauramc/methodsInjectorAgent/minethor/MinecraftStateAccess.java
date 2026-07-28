@@ -6,13 +6,15 @@ import java.lang.reflect.Method;
 final class MinecraftStateAccess {
     private static final String[] CLIENT_CLASSES = {
             "net.minecraft.client.Minecraft",
-            "net.minecraft.client.MinecraftClient"
+            "net.minecraft.client.MinecraftClient",
+            "enn"
     };
-    private static final String[] CLIENT_INSTANCE_METHODS = {"getInstance", "getMinecraft"};
-    private static final String[] PLAYER_FIELDS = {"player", "thePlayer", "field_1724", "f_91074_"};
+    private static final String[] CLIENT_INSTANCE_METHODS = {"getInstance", "getMinecraft", "N"};
+    private static final String[] PLAYER_FIELDS = {"player", "thePlayer", "field_1724", "f_91074_", "t"};
     private static final String[] INVENTORY_FIELDS = {"inventory", "field_71071_by", "f_36095_"};
     private static final String[] INVENTORY_METHODS = {"getInventory", "method_31548", "m_150109_"};
-    private static final String[] SELECTED_SLOT_FIELDS = {"selected", "selectedSlot", "currentItem", "field_7545", "f_35977_"};
+    private static final String[] INVENTORY_CLASS_NAMES = {"byn"};
+    private static final String[] SELECTED_SLOT_FIELDS = {"selected", "selectedSlot", "currentItem", "field_7545", "f_35977_", "l"};
 
     MinecraftSnapshot readSnapshot() {
         try {
@@ -24,10 +26,10 @@ final class MinecraftStateAccess {
             Object foodData = invokeFirst(player, "getFoodData", "getHungerManager", "method_7344", "m_36324_");
             return new MinecraftSnapshot(
                     true,
-                    roundedDouble(player, 0, "getX", "method_23317", "m_20185_"),
-                    roundedDouble(player, 0, "getY", "method_23318", "m_20186_"),
-                    roundedDouble(player, 0, "getZ", "method_23321", "m_20189_"),
-                    normalizedYaw(floatValue(player, 0f, "getYRot", "getYaw", "method_36454", "m_146908_")),
+                    roundedDouble(player, 0, "getX", "method_23317", "m_20185_", "J"),
+                    roundedDouble(player, 0, "getY", "method_23318", "m_20186_", "K"),
+                    roundedDouble(player, 0, "getZ", "method_23321", "m_20189_", "L"),
+                    normalizedYaw(floatValue(player, 0f, "getYRot", "getYaw", "method_36454", "m_146908_", "Y")),
                     roundedFloat(player, 0, "getHealth", "method_6032", "m_21223_"),
                     roundedFloat(player, 20, "getMaxHealth", "method_6063", "m_21233_"),
                     intFrom(foodData, 0, "getFoodLevel", "getFoodLevel", "method_7586", "m_38702_"),
@@ -84,7 +86,9 @@ final class MinecraftStateAccess {
     private Object inventory(Object player) throws ReflectiveOperationException {
         Object inventory = invokeFirst(player, INVENTORY_METHODS);
         if (inventory != null) return inventory;
-        return fieldValue(player, INVENTORY_FIELDS);
+        inventory = fieldValue(player, INVENTORY_FIELDS);
+        if (inventory != null) return inventory;
+        return fieldValueByClassName(player, INVENTORY_CLASS_NAMES);
     }
 
     private static Object invokeFirst(Object target, String... names) throws ReflectiveOperationException {
@@ -109,6 +113,8 @@ final class MinecraftStateAccess {
     private static int roundedDouble(Object target, int fallback, String... names) throws ReflectiveOperationException {
         Object value = invokeFirst(target, names);
         if (value instanceof Number) return (int) Math.round(((Number) value).doubleValue());
+        value = fieldValue(target, names);
+        if (value instanceof Number) return (int) Math.round(((Number) value).doubleValue());
         return fallback;
     }
 
@@ -120,6 +126,8 @@ final class MinecraftStateAccess {
 
     private static float floatValue(Object target, float fallback, String... names) throws ReflectiveOperationException {
         Object value = invokeFirst(target, names);
+        if (value instanceof Number) return ((Number) value).floatValue();
+        value = fieldValue(target, names);
         if (value instanceof Number) return ((Number) value).floatValue();
         return fallback;
     }
@@ -147,6 +155,24 @@ final class MinecraftStateAccess {
 
         field.setAccessible(true);
         return field.get(target);
+    }
+
+    private static Object fieldValueByClassName(Object target, String... classNames) throws ReflectiveOperationException {
+        if (target == null) return null;
+
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            for (Field field : currentClass.getDeclaredFields()) {
+                for (String className : classNames) {
+                    if (!field.getType().getName().equals(className)) continue;
+
+                    field.setAccessible(true);
+                    return field.get(target);
+                }
+            }
+            currentClass = currentClass.getSuperclass();
+        }
+        return null;
     }
 
     private static Field field(Class<?> sourceClass, String... names) {
