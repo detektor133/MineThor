@@ -59,6 +59,11 @@
             android:label="@string/app_short_name"
             android:windowSoftInputMode="adjustResize"/>
         <activity
+            android:name=".minethor.ThorProbeActivity"
+            android:configChanges="keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|keyboard|navigation|uiMode"
+            android:exported="false"
+            android:label="@string/minethor_probe_activity_title" />
+        <activity
             android:name=".ImportControlActivity"
             android:configChanges="keyboard|keyboardHidden"
             android:exported="true"
