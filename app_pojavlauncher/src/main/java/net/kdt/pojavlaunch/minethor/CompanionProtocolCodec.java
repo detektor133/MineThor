@@ -70,6 +70,22 @@ public final class CompanionProtocolCodec {
         return message;
     }
 
+    public static JSONObject helloMessage() throws JSONException {
+        JSONObject message = new JSONObject();
+        message.put("type", "HELLO");
+        message.put("protocolVersion", PROTOCOL_VERSION);
+        return message;
+    }
+
+    public static JSONObject snapshotMessage(CompanionSnapshot snapshot) throws JSONException {
+        JSONObject message = new JSONObject();
+        message.put("type", "SNAPSHOT");
+        message.put("protocolVersion", PROTOCOL_VERSION);
+        message.put("player", playerToJson(snapshot.player));
+        message.put("inventory", inventoryToJson(snapshot.inventory));
+        return message;
+    }
+
     private static JSONObject command(String type, int requestId) throws JSONException {
         JSONObject message = new JSONObject();
         message.put("type", type);
@@ -98,5 +114,27 @@ public final class CompanionProtocolCodec {
                 message.optInt("selectedHotbarSlot", current.selectedHotbarSlot),
                 message.optInt("selectedInventorySlot", current.selectedInventorySlot)
         );
+    }
+
+    private static JSONObject playerToJson(PlayerSnapshot player) throws JSONException {
+        JSONObject message = new JSONObject();
+        message.put("x", player.x);
+        message.put("y", player.y);
+        message.put("z", player.z);
+        message.put("yaw", player.yaw);
+        message.put("health", player.health);
+        message.put("maxHealth", player.maxHealth);
+        message.put("food", player.food);
+        message.put("maxFood", player.maxFood);
+        message.put("armor", player.armor);
+        message.put("xpLevel", player.xpLevel);
+        return message;
+    }
+
+    private static JSONObject inventoryToJson(InventorySnapshot inventory) throws JSONException {
+        JSONObject message = new JSONObject();
+        message.put("selectedHotbarSlot", inventory.selectedHotbarSlot);
+        message.put("selectedInventorySlot", inventory.selectedInventorySlot);
+        return message;
     }
 }
