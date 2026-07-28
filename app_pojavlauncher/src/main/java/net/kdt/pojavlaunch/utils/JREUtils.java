@@ -348,6 +348,7 @@ public class JREUtils {
 
         // We don't have jemalloc for our LWJGL so set the allocator to system to avoid error logs
         userArgs.add("-Dorg.lwjgl.system.allocator=system");
+        userArgs.add("-Dorg.lwjgl.util.NoChecks=true");
 
         // Some phones are not using the right number of cores, fix that
         userArgs.add("-XX:ActiveProcessorCount=" + java.lang.Runtime.getRuntime().availableProcessors());
