@@ -9,6 +9,8 @@ public interface CompanionStateProvider {
 
     CompanionSnapshot selectHotbarSlot(int slot);
 
+    void requestIcon(String iconKey);
+
     void setListener(Listener listener);
 
     void close();

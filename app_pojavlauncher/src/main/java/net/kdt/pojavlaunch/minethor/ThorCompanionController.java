@@ -15,6 +15,10 @@ public class ThorCompanionController {
         provider.selectHotbarSlot(slot);
     }
 
+    public void requestIcon(String iconKey) {
+        provider.requestIcon(iconKey);
+    }
+
     public void setListener(CompanionStateProvider.Listener listener) {
         provider.setListener(listener);
     }

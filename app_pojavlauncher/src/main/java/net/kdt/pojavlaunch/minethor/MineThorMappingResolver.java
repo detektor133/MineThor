@@ -24,7 +24,7 @@ public final class MineThorMappingResolver {
     private static final String TAG = "MineThorMapping";
     private static final String DOWNLOAD_CLIENT_MAPPINGS = "client_mappings";
     private static final String DESCRIPTOR_NAME = "descriptor.properties";
-    private static final String DESCRIPTOR_SCHEMA_VERSION = "3";
+    private static final String DESCRIPTOR_SCHEMA_VERSION = "4";
 
     private MineThorMappingResolver() {
     }
@@ -158,7 +158,27 @@ public final class MineThorMappingResolver {
         descriptor.setProperty("itemStack.hoverNameMethods", index.methodName("net.minecraft.world.item.ItemStack", "getHoverName"));
         descriptor.setProperty("itemStack.damageMethods", index.methodName("net.minecraft.world.item.ItemStack", "getDamageValue"));
         descriptor.setProperty("itemStack.maxDamageMethods", index.methodName("net.minecraft.world.item.ItemStack", "getMaxDamage"));
+        descriptor.setProperty("itemStack.copyMethods", index.methodName("net.minecraft.world.item.ItemStack", "copy"));
+        descriptor.setProperty("itemStack.tagMethods", index.methodName("net.minecraft.world.item.ItemStack", "getTag"));
+        descriptor.setProperty("itemStack.foilMethods", index.methodName("net.minecraft.world.item.ItemStack", "hasFoil"));
         descriptor.setProperty("component.stringMethods", index.methodName("net.minecraft.network.chat.Component", "getString"));
+        descriptor.setProperty("client.submitSupplierMethods", index.methodName("net.minecraft.util.thread.BlockableEventLoop", "submit", 1));
+        descriptor.setProperty("guiGraphics.classes", index.className("net.minecraft.client.gui.GuiGraphics"));
+        descriptor.setProperty("guiGraphics.renderItemMethods", index.methodName("net.minecraft.client.gui.GuiGraphics", "renderItem", 3));
+        descriptor.setProperty("guiGraphics.flushMethods", index.methodName("net.minecraft.client.gui.GuiGraphics", "flush"));
+        descriptor.setProperty("tesselator.classes", index.className("com.mojang.blaze3d.vertex.Tesselator"));
+        descriptor.setProperty("tesselator.instanceMethods", index.methodName("com.mojang.blaze3d.vertex.Tesselator", "getInstance"));
+        descriptor.setProperty("tesselator.builderMethods", index.methodName("com.mojang.blaze3d.vertex.Tesselator", "getBuilder"));
+        descriptor.setProperty("multiBufferSource.classes", index.className("net.minecraft.client.renderer.MultiBufferSource"));
+        descriptor.setProperty("multiBufferSource.immediateMethods", index.methodName("net.minecraft.client.renderer.MultiBufferSource", "immediate", 1));
+        descriptor.setProperty("textureTarget.classes", index.className("com.mojang.blaze3d.pipeline.TextureTarget"));
+        descriptor.setProperty("renderTarget.bindWriteMethods", index.methodName("com.mojang.blaze3d.pipeline.RenderTarget", "bindWrite", 1));
+        descriptor.setProperty("renderTarget.unbindWriteMethods", index.methodName("com.mojang.blaze3d.pipeline.RenderTarget", "unbindWrite"));
+        descriptor.setProperty("renderTarget.destroyBuffersMethods", index.methodName("com.mojang.blaze3d.pipeline.RenderTarget", "destroyBuffers"));
+        descriptor.setProperty("screenshot.classes", index.className("net.minecraft.client.Screenshot"));
+        descriptor.setProperty("screenshot.takeMethods", index.methodName("net.minecraft.client.Screenshot", "takeScreenshot", 1));
+        descriptor.setProperty("nativeImage.byteArrayMethods", index.methodName("com.mojang.blaze3d.platform.NativeImage", "asByteArray"));
+        descriptor.setProperty("nativeImage.closeMethods", "close");
         descriptor.setProperty("x.accessors", index.methodName("net.minecraft.world.entity.Entity", "getX"));
         descriptor.setProperty("y.accessors", index.methodName("net.minecraft.world.entity.Entity", "getY"));
         descriptor.setProperty("z.accessors", index.methodName("net.minecraft.world.entity.Entity", "getZ"));
@@ -193,7 +213,27 @@ public final class MineThorMappingResolver {
                 descriptor.getProperty("itemStack.hoverNameMethods"),
                 descriptor.getProperty("itemStack.damageMethods"),
                 descriptor.getProperty("itemStack.maxDamageMethods"),
+                descriptor.getProperty("itemStack.copyMethods"),
+                descriptor.getProperty("itemStack.tagMethods"),
+                descriptor.getProperty("itemStack.foilMethods"),
                 descriptor.getProperty("component.stringMethods"),
+                descriptor.getProperty("client.submitSupplierMethods"),
+                descriptor.getProperty("guiGraphics.classes"),
+                descriptor.getProperty("guiGraphics.renderItemMethods"),
+                descriptor.getProperty("guiGraphics.flushMethods"),
+                descriptor.getProperty("tesselator.classes"),
+                descriptor.getProperty("tesselator.instanceMethods"),
+                descriptor.getProperty("tesselator.builderMethods"),
+                descriptor.getProperty("multiBufferSource.classes"),
+                descriptor.getProperty("multiBufferSource.immediateMethods"),
+                descriptor.getProperty("textureTarget.classes"),
+                descriptor.getProperty("renderTarget.bindWriteMethods"),
+                descriptor.getProperty("renderTarget.unbindWriteMethods"),
+                descriptor.getProperty("renderTarget.destroyBuffersMethods"),
+                descriptor.getProperty("screenshot.classes"),
+                descriptor.getProperty("screenshot.takeMethods"),
+                descriptor.getProperty("nativeImage.byteArrayMethods"),
+                descriptor.getProperty("nativeImage.closeMethods"),
                 descriptor.getProperty("x.accessors"),
                 descriptor.getProperty("y.accessors"),
                 descriptor.getProperty("z.accessors"),
@@ -248,8 +288,12 @@ public final class MineThorMappingResolver {
         }
 
         String methodName(String officialClass, String officialName) {
+            return methodName(officialClass, officialName, 0);
+        }
+
+        String methodName(String officialClass, String officialName, int arity) {
             Map<String, String> classMethods = methods.get(officialClass);
-            String name = classMethods == null ? null : classMethods.get(methodKey(officialName, 0));
+            String name = classMethods == null ? null : classMethods.get(methodKey(officialName, arity));
             return name == null ? "" : name;
         }
 

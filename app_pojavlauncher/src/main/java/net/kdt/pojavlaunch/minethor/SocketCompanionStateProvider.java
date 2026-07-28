@@ -58,6 +58,15 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
     }
 
     @Override
+    public void requestIcon(String iconKey) {
+        try {
+            outgoingMessages.offer(CompanionProtocolCodec.iconRequest(iconKey));
+        } catch (JSONException e) {
+            Log.d(TAG, "Cannot build icon request", e);
+        }
+    }
+
+    @Override
     public void setListener(Listener listener) {
         this.listener = listener;
     }

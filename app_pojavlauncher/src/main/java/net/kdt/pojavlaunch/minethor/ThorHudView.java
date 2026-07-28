@@ -173,7 +173,10 @@ public class ThorHudView extends View {
     private void drawSlotContent(Canvas canvas, InventorySlotSnapshot slot, RectF rect) {
         if (slot == null || slot.isEmpty()) return;
 
-        Bitmap icon = MineThorItemIconResolver.iconFor(slot.itemId);
+        Bitmap icon = MineThorIconCache.icon(slot.iconKey);
+        if (icon == null && MineThorIconCache.shouldRequest(slot.iconKey)) {
+            controller.requestIcon(slot.iconKey);
+        }
         float inset = rect.width() * 0.14f;
         if (icon != null) {
             canvas.drawBitmap(icon, null, new RectF(rect.left + inset, rect.top + inset, rect.right - inset, rect.bottom - inset), null);

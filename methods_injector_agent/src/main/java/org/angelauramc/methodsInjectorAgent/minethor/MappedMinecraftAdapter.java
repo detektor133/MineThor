@@ -20,6 +20,9 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     private static final String[] ITEM_STACK_HOVER_NAME_METHODS = {"getHoverName", "getName", "method_7964", "m_41786_"};
     private static final String[] ITEM_STACK_DAMAGE_METHODS = {"getDamageValue", "getDamage", "method_7919", "m_41773_"};
     private static final String[] ITEM_STACK_MAX_DAMAGE_METHODS = {"getMaxDamage", "method_7936", "m_41776_"};
+    private static final String[] ITEM_STACK_COPY_METHODS = {"copy", "method_7972", "m_41777_"};
+    private static final String[] ITEM_STACK_TAG_METHODS = {"getTag", "method_7969", "m_41783_"};
+    private static final String[] ITEM_STACK_FOIL_METHODS = {"hasFoil", "hasGlint", "method_7958", "m_41790_"};
     private static final String[] COMPONENT_STRING_METHODS = {"getString", "method_10851"};
     private static final String[] X_ACCESSORS = {"getX", "method_23317", "m_20185_"};
     private static final String[] Y_ACCESSORS = {"getY", "method_23318", "m_20186_"};
@@ -115,6 +118,21 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     @Override
     protected String[] itemStackMaxDamageMethods() {
         return ITEM_STACK_MAX_DAMAGE_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackCopyMethods() {
+        return ITEM_STACK_COPY_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackTagMethods() {
+        return ITEM_STACK_TAG_METHODS;
+    }
+
+    @Override
+    protected String[] itemStackFoilMethods() {
+        return ITEM_STACK_FOIL_METHODS;
     }
 
     @Override

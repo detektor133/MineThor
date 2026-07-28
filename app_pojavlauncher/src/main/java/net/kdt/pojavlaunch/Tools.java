@@ -61,7 +61,6 @@ import net.kdt.pojavlaunch.lifecycle.ContextExecutorTask;
 import net.kdt.pojavlaunch.lifecycle.LifecycleAwareAlertDialog;
 import net.kdt.pojavlaunch.memory.MemoryHoleFinder;
 import net.kdt.pojavlaunch.memory.SelfMapsParser;
-import net.kdt.pojavlaunch.minethor.MineThorItemIconResolver;
 import net.kdt.pojavlaunch.minethor.MineThorMappingResolver;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.multirt.Runtime;
@@ -450,7 +449,6 @@ public final class Tools {
 
         Runtime runtime = MultiRTUtils.forceReread(Tools.pickRuntime(minecraftProfile, versionJavaRequirement));
         JMinecraftVersionList.Version versionInfo = Tools.getVersionInfo(versionId);
-        MineThorItemIconResolver.setActiveVersion(Tools.isValidString(versionInfo.inheritsFrom) ? versionInfo.inheritsFrom : versionId);
 
 
         // Pre-process specific files

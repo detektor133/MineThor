@@ -56,6 +56,10 @@ public final class CompanionProtocolCodec {
             InventorySnapshot inventory = message.has("inventory") ? inventoryFromJson(current.inventory, message.getJSONObject("inventory")) : current.inventory;
             return new CompanionSnapshot(message.optBoolean("connected", true), commandAckFromJson(current, message), player, inventory);
         }
+        if ("ICON_DATA".equals(type)) {
+            MineThorIconCache.put(message.optString("iconKey", ""), message.optString("pngBase64", ""));
+            return current;
+        }
         return current;
     }
 
@@ -69,6 +73,14 @@ public final class CompanionProtocolCodec {
         JSONObject message = new JSONObject();
         message.put("type", "HELLO");
         message.put("protocolVersion", PROTOCOL_VERSION);
+        return message;
+    }
+
+    public static JSONObject iconRequest(String iconKey) throws JSONException {
+        JSONObject message = new JSONObject();
+        message.put("type", "REQUEST_ICON");
+        message.put("protocolVersion", PROTOCOL_VERSION);
+        message.put("iconKey", iconKey);
         return message;
     }
 
@@ -163,6 +175,7 @@ public final class CompanionProtocolCodec {
                     slot.optInt("index", i),
                     slot.optString("itemId", ""),
                     slot.optString("name", ""),
+                    slot.optString("iconKey", ""),
                     slot.optInt("count", 0),
                     slot.optInt("damage", 0),
                     slot.optInt("maxDamage", 0)
@@ -181,6 +194,7 @@ public final class CompanionProtocolCodec {
                 message.put("index", slot.index);
                 message.put("itemId", slot.itemId);
                 message.put("name", slot.name);
+                message.put("iconKey", slot.iconKey);
                 message.put("count", slot.count);
                 message.put("damage", slot.damage);
                 message.put("maxDamage", slot.maxDamage);

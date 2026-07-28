@@ -1,14 +1,6 @@
 package org.angelauramc.methodsInjectorAgent.minethor;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.Properties;
-
 final class DescriptorMinecraftAdapter extends ReflectiveMinecraftAdapter {
-    private static final String DESCRIPTOR_PROPERTY = "minethor.mappingDescriptor";
-    private final Properties descriptor = new Properties();
-    private boolean loaded;
-
     @Override
     public String name() {
         return value("name");
@@ -16,7 +8,7 @@ final class DescriptorMinecraftAdapter extends ReflectiveMinecraftAdapter {
 
     @Override
     public boolean isAvailable() {
-        return loadDescriptor() && super.isAvailable();
+        return DescriptorProperties.load() && super.isAvailable();
     }
 
     @Override
@@ -100,6 +92,21 @@ final class DescriptorMinecraftAdapter extends ReflectiveMinecraftAdapter {
     }
 
     @Override
+    protected String[] itemStackCopyMethods() {
+        return values("itemStack.copyMethods");
+    }
+
+    @Override
+    protected String[] itemStackTagMethods() {
+        return values("itemStack.tagMethods");
+    }
+
+    @Override
+    protected String[] itemStackFoilMethods() {
+        return values("itemStack.foilMethods");
+    }
+
+    @Override
     protected String[] componentStringMethods() {
         return values("component.stringMethods");
     }
@@ -154,33 +161,11 @@ final class DescriptorMinecraftAdapter extends ReflectiveMinecraftAdapter {
         return values("xpLevel.fields");
     }
 
-    private boolean loadDescriptor() {
-        if (loaded) return !descriptor.isEmpty();
-        loaded = true;
-
-        String descriptorPath = System.getProperty(DESCRIPTOR_PROPERTY, "");
-        if (descriptorPath.isEmpty()) return false;
-
-        try (FileInputStream input = new FileInputStream(descriptorPath)) {
-            descriptor.load(input);
-            return !descriptor.isEmpty();
-        } catch (IOException e) {
-            System.out.println("MineThorBridge: cannot read mapping descriptor " + descriptorPath + ": " + e);
-            return false;
-        }
-    }
-
     private String value(String key) {
-        return descriptor.getProperty(key, "");
+        return DescriptorProperties.value(key);
     }
 
     private String[] values(String key) {
-        String value = value(key);
-        if (value.isEmpty()) return new String[0];
-        String[] parts = value.split(",");
-        for (int i = 0; i < parts.length; i++) {
-            parts[i] = parts[i].trim();
-        }
-        return parts;
+        return DescriptorProperties.values(key);
     }
 }

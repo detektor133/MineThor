@@ -4,14 +4,20 @@ final class InventorySlotSnapshot {
     final int index;
     final String itemId;
     final String name;
+    final String iconKey;
     final int count;
     final int damage;
     final int maxDamage;
 
     InventorySlotSnapshot(int index, String itemId, String name, int count, int damage, int maxDamage) {
+        this(index, itemId, name, "", count, damage, maxDamage);
+    }
+
+    InventorySlotSnapshot(int index, String itemId, String name, String iconKey, int count, int damage, int maxDamage) {
         this.index = index;
         this.itemId = itemId;
         this.name = name;
+        this.iconKey = iconKey;
         this.count = count;
         this.damage = damage;
         this.maxDamage = maxDamage;

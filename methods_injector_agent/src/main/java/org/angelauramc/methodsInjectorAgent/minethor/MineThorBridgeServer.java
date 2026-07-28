@@ -53,12 +53,15 @@ public final class MineThorBridgeServer {
             DataInputStream input = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
             int lastAppliedCommandId = 0;
+            MinecraftIconRenderer iconRenderer = new MinecraftIconRenderer();
             writeMessage(output, helloMessage());
 
             long lastSnapshotAt = 0L;
             while (!clientSocket.isClosed()) {
                 Command command = readCommandIfAvailable(input);
-                if (command != null && command.commandId > lastAppliedCommandId) {
+                if (command != null && "REQUEST_ICON".equals(command.type)) {
+                    writeMessage(output, iconMessage(command.iconKey, iconRenderer.renderIconBase64(command.iconKey)));
+                } else if (command != null && command.commandId > lastAppliedCommandId) {
                     boolean applied = applyCommand(minecraftStateAccess, command);
                     if (applied) {
                         lastAppliedCommandId = command.commandId;
@@ -90,13 +93,15 @@ public final class MineThorBridgeServer {
         try {
             String json = readMessage(input);
             if (JsonProtocol.intValue(json, "protocolVersion", -1) != PROTOCOL_VERSION) return null;
+            String type = JsonProtocol.stringValue(json, "type", "");
             int commandId = JsonProtocol.intValue(json, "commandId", 0);
-            if (commandId <= 0) return null;
+            if (!"REQUEST_ICON".equals(type) && commandId <= 0) return null;
 
             return new Command(
-                    JsonProtocol.stringValue(json, "type", ""),
+                    type,
                     commandId,
-                    JsonProtocol.intValue(json, "slot", -1)
+                    JsonProtocol.intValue(json, "slot", -1),
+                    JsonProtocol.stringValue(json, "iconKey", "")
             );
         } catch (SocketTimeoutException ignored) {
             return null;
@@ -131,6 +136,12 @@ public final class MineThorBridgeServer {
                 + "}}";
     }
 
+    private static String iconMessage(String iconKey, String pngBase64) {
+        return "{\"type\":\"ICON_DATA\",\"protocolVersion\":" + PROTOCOL_VERSION
+                + ",\"iconKey\":\"" + escapeJson(iconKey) + "\""
+                + ",\"pngBase64\":\"" + escapeJson(pngBase64) + "\"}";
+    }
+
     private static String slotsMessage(InventorySlotSnapshot[] slots) {
         StringBuilder builder = new StringBuilder("[");
         for (int i = 0; i < slots.length; i++) {
@@ -145,6 +156,7 @@ public final class MineThorBridgeServer {
         return "{\"index\":" + slot.index
                 + ",\"itemId\":\"" + escapeJson(slot.itemId) + "\""
                 + ",\"name\":\"" + escapeJson(slot.name) + "\""
+                + ",\"iconKey\":\"" + escapeJson(slot.iconKey) + "\""
                 + ",\"count\":" + slot.count
                 + ",\"damage\":" + slot.damage
                 + ",\"maxDamage\":" + slot.maxDamage
@@ -203,11 +215,13 @@ public final class MineThorBridgeServer {
         final String type;
         final int commandId;
         final int slot;
+        final String iconKey;
 
-        Command(String type, int commandId, int slot) {
+        Command(String type, int commandId, int slot, String iconKey) {
             this.type = type;
             this.commandId = commandId;
             this.slot = slot;
+            this.iconKey = iconKey;
         }
     }
 }

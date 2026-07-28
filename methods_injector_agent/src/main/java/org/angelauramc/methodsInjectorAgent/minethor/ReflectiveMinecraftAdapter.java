@@ -2,6 +2,8 @@ package org.angelauramc.methodsInjectorAgent.minethor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
@@ -101,6 +103,12 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
 
     protected abstract String[] itemStackMaxDamageMethods();
 
+    protected abstract String[] itemStackCopyMethods();
+
+    protected abstract String[] itemStackTagMethods();
+
+    protected abstract String[] itemStackFoilMethods();
+
     protected abstract String[] componentStringMethods();
 
     protected abstract String[] xAccessors();
@@ -191,7 +199,13 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
         String name = componentString(invokeFirst(itemStack, itemStackHoverNameMethods()));
         int damage = intFrom(itemStack, 0, itemStackDamageMethods());
         int maxDamage = intFrom(itemStack, 0, itemStackMaxDamageMethods());
-        return new InventorySlotSnapshot(index, itemId, name, count, damage, maxDamage);
+        boolean foil = booleanFrom(itemStack, false, itemStackFoilMethods());
+        String tag = stringValue(invokeFirst(itemStack, itemStackTagMethods()));
+        String fingerprint = itemId + "|d=" + damage + "|m=" + maxDamage + "|f=" + foil + "|t=" + tag;
+        String iconKey = sha1(fingerprint);
+        Object copy = invokeFirst(itemStack, itemStackCopyMethods());
+        IconStackRegistry.put(iconKey, copy == null ? itemStack : copy);
+        return new InventorySlotSnapshot(index, itemId, name, iconKey, count, damage, maxDamage);
     }
 
     private static boolean booleanFrom(Object target, boolean fallback, String... names) throws ReflectiveOperationException {
@@ -210,6 +224,26 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
         String value = stringFrom(component, "", componentStringMethods());
         if (!value.isEmpty()) return value;
         return component == null ? "" : component.toString();
+    }
+
+    private static String stringValue(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
+    private static String sha1(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            byte[] bytes = digest.digest(value.getBytes("UTF-8"));
+            StringBuilder builder = new StringBuilder(bytes.length * 2);
+            for (byte b : bytes) {
+                String hex = Integer.toHexString(b & 0xff);
+                if (hex.length() == 1) builder.append('0');
+                builder.append(hex);
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException | java.io.UnsupportedEncodingException e) {
+            return Integer.toHexString(value.hashCode());
+        }
     }
 
     private static String itemIdFromDescriptionId(String descriptionId) {
