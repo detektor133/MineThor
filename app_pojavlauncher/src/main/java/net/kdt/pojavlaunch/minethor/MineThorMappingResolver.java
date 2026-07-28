@@ -24,6 +24,7 @@ public final class MineThorMappingResolver {
     private static final String TAG = "MineThorMapping";
     private static final String DOWNLOAD_CLIENT_MAPPINGS = "client_mappings";
     private static final String DESCRIPTOR_NAME = "descriptor.properties";
+    private static final String DESCRIPTOR_SCHEMA_VERSION = "2";
 
     private MineThorMappingResolver() {
     }
@@ -68,7 +69,7 @@ public final class MineThorMappingResolver {
 
         File cacheDir = mappingCacheDir(mappingVersion.id == null ? versionId : mappingVersion.id);
         File descriptorFile = new File(cacheDir, DESCRIPTOR_NAME);
-        if (descriptorFile.isFile() && descriptorFile.canRead()) return descriptorFile;
+        if (isCachedDescriptorCurrent(descriptorFile)) return descriptorFile;
 
         File mappingsFile = new File(cacheDir, "client.txt");
         FileUtils.ensureParentDirectory(mappingsFile);
@@ -111,6 +112,19 @@ public final class MineThorMappingResolver {
         return new File(Tools.DIR_DATA, "minethor" + File.separator + "mappings" + File.separator + versionId);
     }
 
+    private static boolean isCachedDescriptorCurrent(File descriptorFile) {
+        if (!descriptorFile.isFile() || !descriptorFile.canRead()) return false;
+
+        Properties descriptor = new Properties();
+        try (FileReader reader = new FileReader(descriptorFile)) {
+            descriptor.load(reader);
+            return DESCRIPTOR_SCHEMA_VERSION.equals(descriptor.getProperty("schema"))
+                    && requiredDescriptorValuesPresent(descriptor);
+        } catch (IOException | RuntimeException e) {
+            return false;
+        }
+    }
+
     private static Properties buildDescriptor(String versionId, MappingIndex index) {
         String clientClass = index.className("net.minecraft.client.Minecraft");
         String playerClass = index.className("net.minecraft.world.entity.player.Player");
@@ -124,6 +138,7 @@ public final class MineThorMappingResolver {
         }
 
         Properties descriptor = new Properties();
+        descriptor.setProperty("schema", DESCRIPTOR_SCHEMA_VERSION);
         descriptor.setProperty("name", "mojang-" + versionId);
         descriptor.setProperty("client.classes", clientClass);
         descriptor.setProperty("client.instanceMethods", index.methodName("net.minecraft.client.Minecraft", "getInstance"));
@@ -212,7 +227,7 @@ public final class MineThorMappingResolver {
 
         String methodName(String officialClass, String officialName) {
             Map<String, String> classMethods = methods.get(officialClass);
-            String name = classMethods == null ? null : classMethods.get(officialName);
+            String name = classMethods == null ? null : classMethods.get(methodKey(officialName, 0));
             return name == null ? "" : name;
         }
 
@@ -232,8 +247,9 @@ public final class MineThorMappingResolver {
             String obfuscatedName = line.substring(arrow + 4).trim();
             if (left.contains("(")) {
                 String officialName = methodNameFromLeftSide(left);
+                int arity = methodArityFromLeftSide(left);
                 if (Tools.isValidString(officialName)) {
-                    methods.computeIfAbsent(currentClass, ignored -> new HashMap<>()).put(officialName, obfuscatedName);
+                    methods.computeIfAbsent(currentClass, ignored -> new HashMap<>()).put(methodKey(officialName, arity), obfuscatedName);
                 }
                 return;
             }
@@ -260,6 +276,22 @@ public final class MineThorMappingResolver {
             int nameStart = value.lastIndexOf(' ', argsStart);
             if (nameStart < 0 || nameStart + 1 >= argsStart) return "";
             return value.substring(nameStart + 1, argsStart);
+        }
+
+        private static int methodArityFromLeftSide(String value) {
+            int argsStart = value.indexOf('(');
+            int argsEnd = value.indexOf(')', argsStart + 1);
+            if (argsStart < 0 || argsEnd < 0 || argsEnd <= argsStart + 1) return 0;
+
+            int arity = 1;
+            for (int i = argsStart + 1; i < argsEnd; i++) {
+                if (value.charAt(i) == ',') arity++;
+            }
+            return arity;
+        }
+
+        private static String methodKey(String officialName, int arity) {
+            return officialName + "#" + arity;
         }
 
         private static String fieldNameFromLeftSide(String value) {

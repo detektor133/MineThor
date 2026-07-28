@@ -72,8 +72,8 @@ public class ThorHudView extends View {
     }
 
     private void init() {
-        setFocusable(true);
-        setFocusableInTouchMode(true);
+        setFocusable(false);
+        setFocusableInTouchMode(false);
 
         backgroundPaint.setColor(Color.rgb(18, 22, 26));
         panelPaint.setColor(Color.rgb(28, 34, 40));
