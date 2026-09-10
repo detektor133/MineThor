@@ -12,6 +12,7 @@ final class MinecraftSnapshot {
     final int maxFood;
     final int armor;
     final int xpLevel;
+    final long dayTime;
     final int selectedHotbarSlot;
     final int selectedInventorySlot;
     final InventorySlotSnapshot[] mainSlots;
@@ -30,6 +31,7 @@ final class MinecraftSnapshot {
             int maxFood,
             int armor,
             int xpLevel,
+            long dayTime,
             int selectedHotbarSlot,
             int selectedInventorySlot,
             InventorySlotSnapshot[] mainSlots,
@@ -47,6 +49,7 @@ final class MinecraftSnapshot {
         this.maxFood = maxFood;
         this.armor = armor;
         this.xpLevel = xpLevel;
+        this.dayTime = dayTime;
         this.selectedHotbarSlot = selectedHotbarSlot;
         this.selectedInventorySlot = selectedInventorySlot;
         this.mainSlots = mainSlots;
@@ -55,7 +58,7 @@ final class MinecraftSnapshot {
     }
 
     static MinecraftSnapshot disconnected() {
-        return new MinecraftSnapshot(false, 0, 0, 0, 0, 0, 20, 0, 20, 0, 0, -1, -1, emptySlots(36), emptySlots(4), emptySlots(1));
+        return new MinecraftSnapshot(false, 0, 0, 0, 0, 0, 20, 0, 20, 0, 0, 0L, -1, -1, emptySlots(36), emptySlots(4), emptySlots(1));
     }
 
     static InventorySlotSnapshot[] emptySlots(int count) {

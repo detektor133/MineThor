@@ -1,50 +1,78 @@
 package org.angelauramc.methodsInjectorAgent.minethor;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Base64;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.concurrent.Executor;
 
 final class MinecraftIconRenderer {
-    private static final int ICON_SIZE = 32;
+    private static final int ICON_SIZE = 64;
+    private static final float ICON_SCALE = 4f;
     private static final int GL_COLOR_BUFFER_BIT = 16384;
-    private static final int ICON_TIMEOUT_SECONDS = 2;
 
-    String renderIconBase64(String iconKey) {
-        Object itemStack = IconStackRegistry.get(iconKey);
-        if (itemStack == null) return "";
+    IconRenderResult requestIcon(String iconKey) {
+        return MineThorRenderQueue.requestIcon(iconKey, this);
+    }
 
+    MineThorRenderQueue.CompletedIcon pollCompletedIcon() {
+        return MineThorRenderQueue.pollCompleted();
+    }
+
+    void scheduleIconRender(String iconKey, Object itemStack) {
         try {
             Object client = minecraftClient();
-            Object result = submitToClient(client, () -> renderIconOnClientThread(client, itemStack));
-            if (!(result instanceof byte[])) return "";
-            return Base64.getEncoder().encodeToString((byte[]) result);
+            if (!(client instanceof Executor)) {
+                MineThorRenderQueue.complete(iconKey, IconRenderResult.error("client-not-executor:" + client.getClass().getName()));
+                return;
+            }
+
+            ((Executor) client).execute(() -> {
+                MineThorRenderQueue.complete(iconKey, renderIconOnClientThread(iconKey, itemStack));
+            });
         } catch (ReflectiveOperationException | RuntimeException e) {
-            System.out.println("MineThorBridge: cannot render icon " + iconKey + ": " + e);
-            return "";
+            MineThorRenderQueue.complete(iconKey, IconRenderResult.error("schedule-failed:" + e.getClass().getSimpleName() + ":" + e.getMessage()));
         }
     }
 
-    private Object renderIconOnClientThread(Object client, Object itemStack) {
+    private IconRenderResult renderIconOnClientThread(String iconKey, Object itemStack) {
+        try {
+            Object client = minecraftClient();
+            Object result = renderIconToPngBytes(client, itemStack);
+            if (!(result instanceof byte[])) {
+                String resultType = result == null ? "null" : result.getClass().getName();
+                return IconRenderResult.error("unexpected-result:" + resultType);
+            }
+            byte[] pngBytes = (byte[]) result;
+            if (pngBytes.length == 0) return IconRenderResult.error("empty-png");
+            return IconRenderResult.success(Base64.getEncoder().encodeToString(pngBytes), pngBytes.length);
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            return IconRenderResult.error(e.getClass().getSimpleName() + ":" + e.getMessage());
+        }
+    }
+
+    private Object renderIconToPngBytes(Object client, Object itemStack) {
         Object target = null;
         Object image = null;
+        RenderState renderState = null;
         try {
             target = textureTarget();
+            renderState = captureRenderState(client);
             invoke(target, "renderTarget.bindWriteMethods", true);
             clearTarget();
+            setupIconProjection();
 
             Object guiGraphics = guiGraphics(client);
-            invoke(guiGraphics, "guiGraphics.renderItemMethods", itemStack, 8, 8);
+            invoke(guiGraphics, "guiGraphics.renderItemMethods", itemStack, 0, 0);
             invoke(guiGraphics, "guiGraphics.flushMethods");
 
             image = invokeStatic(classFor("screenshot.classes"), "screenshot.takeMethods", target);
             return invoke(image, "nativeImage.byteArrayMethods");
         } catch (ReflectiveOperationException | RuntimeException e) {
-            System.out.println("MineThorBridge: icon render step failed: " + e);
-            return new byte[0];
+            throw new IllegalStateException("render-step:" + e.getClass().getSimpleName() + ":" + e.getMessage(), e);
         } finally {
+            restoreRenderState(renderState);
             closeNativeImage(image);
             destroyTarget(target);
         }
@@ -65,19 +93,6 @@ final class MinecraftIconRenderer {
             }
         }
         throw new ClassNotFoundException("Minecraft client class is not loaded");
-    }
-
-    private Object submitToClient(Object client, Supplier<Object> supplier) throws ReflectiveOperationException {
-        Method submit = method(client.getClass(), DescriptorProperties.values("client.submitSupplierMethods"), Supplier.class);
-        submit.setAccessible(true);
-        Object future = submit.invoke(client, supplier);
-        if (!(future instanceof CompletableFuture)) return "";
-
-        try {
-            return ((CompletableFuture<?>) future).get(ICON_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            throw new IllegalStateException("Icon render timeout", e);
-        }
     }
 
     private Object textureTarget() throws ReflectiveOperationException {
@@ -123,6 +138,85 @@ final class MinecraftIconRenderer {
         method(renderSystem, new String[]{"clear"}, int.class, boolean.class).invoke(null, GL_COLOR_BUFFER_BIT, false);
     }
 
+    private void setupIconProjection() throws ReflectiveOperationException {
+        Class<?> renderSystem = Class.forName("com.mojang.blaze3d.systems.RenderSystem");
+        method(renderSystem, new String[]{"backupProjectionMatrix"}).invoke(null);
+        method(renderSystem, new String[]{"viewport"}, int.class, int.class, int.class, int.class).invoke(null, 0, 0, ICON_SIZE, ICON_SIZE);
+
+        Class<?> matrixClass = Class.forName("org.joml.Matrix4f");
+        Object projection = matrixClass.getDeclaredConstructor().newInstance();
+        Method setOrtho = methodOrNull(matrixClass, "setOrtho", float.class, float.class, float.class, float.class, float.class, float.class);
+        if (setOrtho == null) setOrtho = methodOrNull(matrixClass, "ortho", float.class, float.class, float.class, float.class, float.class, float.class);
+        if (setOrtho == null) throw new NoSuchMethodException("Matrix4f.setOrtho");
+        setOrtho.invoke(projection, 0f, (float) ICON_SIZE, (float) ICON_SIZE, 0f, 1000f, 3000f);
+
+        Method setProjection = methodOrNullByName(renderSystem, "setProjectionMatrix", 2);
+        if (setProjection == null) throw new NoSuchMethodException("RenderSystem.setProjectionMatrix");
+        Object vertexSorting = vertexSorting(setProjection.getParameterTypes()[1]);
+        if (vertexSorting == null) throw new NoSuchFieldException(setProjection.getParameterTypes()[1].getName());
+        setProjection.invoke(null, projection, vertexSorting);
+
+        Object modelViewStack = method(renderSystem, new String[]{"getModelViewStack"}).invoke(null);
+        invoke(modelViewStack, "poseStack.setIdentityMethods");
+        invoke(modelViewStack, "poseStack.translateMethods", 0f, 0f, -2000f);
+        invoke(modelViewStack, "poseStack.scaleMethods", ICON_SCALE, ICON_SCALE, 1f);
+        method(renderSystem, new String[]{"applyModelViewMatrix"}).invoke(null);
+    }
+
+    private RenderState captureRenderState(Object client) throws ReflectiveOperationException {
+        return new RenderState(mainRenderTarget(client), windowWidth(client), windowHeight(client));
+    }
+
+    private void restoreRenderState(RenderState renderState) {
+        if (renderState == null) return;
+
+        try {
+            Class<?> renderSystem = Class.forName("com.mojang.blaze3d.systems.RenderSystem");
+            method(renderSystem, new String[]{"restoreProjectionMatrix"}).invoke(null);
+            Object modelViewStack = method(renderSystem, new String[]{"getModelViewStack"}).invoke(null);
+            invoke(modelViewStack, "poseStack.setIdentityMethods");
+            method(renderSystem, new String[]{"applyModelViewMatrix"}).invoke(null);
+            invoke(renderState.renderTarget, "renderTarget.bindWriteMethods", true);
+            method(renderSystem, new String[]{"viewport"}, int.class, int.class, int.class, int.class)
+                    .invoke(null, 0, 0, renderState.width, renderState.height);
+        } catch (ReflectiveOperationException ignored) {
+        }
+    }
+
+    private Object mainRenderTarget(Object client) throws ReflectiveOperationException {
+        return fieldValue(client, "mainRenderTarget.fields");
+    }
+
+    private int windowWidth(Object client) throws ReflectiveOperationException {
+        Object window = window(client);
+        Object value = invoke(window, "window.widthMethods");
+        if (value instanceof Number) return ((Number) value).intValue();
+        throw new IllegalStateException("Window width is not numeric");
+    }
+
+    private int windowHeight(Object client) throws ReflectiveOperationException {
+        Object window = window(client);
+        Object value = invoke(window, "window.heightMethods");
+        if (value instanceof Number) return ((Number) value).intValue();
+        throw new IllegalStateException("Window height is not numeric");
+    }
+
+    private Object window(Object client) throws ReflectiveOperationException {
+        return fieldValue(client, "window.fields");
+    }
+
+    private Object fieldValue(Object target, String descriptorKey) throws ReflectiveOperationException {
+        for (String fieldName : DescriptorProperties.values(descriptorKey)) {
+            Field field = fieldOrNull(target.getClass(), fieldName);
+            if (field == null) continue;
+
+            field.setAccessible(true);
+            Object value = field.get(target);
+            if (value != null) return value;
+        }
+        throw new NoSuchFieldException(target.getClass().getName() + "." + descriptorKey);
+    }
+
     private void closeNativeImage(Object image) {
         if (image == null) return;
 
@@ -143,15 +237,25 @@ final class MinecraftIconRenderer {
     }
 
     private Object invoke(Object target, String descriptorKey, Object... args) throws ReflectiveOperationException {
-        Method method = method(target.getClass(), DescriptorProperties.values(descriptorKey), argTypes(args));
-        method.setAccessible(true);
-        return method.invoke(target, args);
+        for (String methodName : DescriptorProperties.values(descriptorKey)) {
+            Method method = methodOrNull(target.getClass(), methodName, args);
+            if (method == null) continue;
+
+            method.setAccessible(true);
+            return method.invoke(target, args);
+        }
+        throw new NoSuchMethodException(target.getClass().getName());
     }
 
     private Object invokeStatic(Class<?> sourceClass, String descriptorKey, Object... args) throws ReflectiveOperationException {
-        Method method = method(sourceClass, DescriptorProperties.values(descriptorKey), argTypes(args));
-        method.setAccessible(true);
-        return method.invoke(null, args);
+        for (String methodName : DescriptorProperties.values(descriptorKey)) {
+            Method method = methodOrNull(sourceClass, methodName, args);
+            if (method == null) continue;
+
+            method.setAccessible(true);
+            return method.invoke(null, args);
+        }
+        throw new NoSuchMethodException(sourceClass.getName());
     }
 
     private static Class<?> classFor(String descriptorKey) throws ReflectiveOperationException {
@@ -223,6 +327,52 @@ final class MinecraftIconRenderer {
         return null;
     }
 
+    private static Method methodOrNullByName(Class<?> sourceClass, String name, int arity) {
+        Class<?> currentClass = sourceClass;
+        while (currentClass != null) {
+            for (Method method : currentClass.getDeclaredMethods()) {
+                if (method.getName().equals(name) && method.getParameterTypes().length == arity) return method;
+            }
+            currentClass = currentClass.getSuperclass();
+        }
+        return null;
+    }
+
+    private static Object firstStaticValue(Class<?> sourceClass) throws ReflectiveOperationException {
+        for (Field field : sourceClass.getDeclaredFields()) {
+            int modifiers = field.getModifiers();
+            if (!Modifier.isStatic(modifiers) || !sourceClass.isAssignableFrom(field.getType())) continue;
+
+            field.setAccessible(true);
+            return field.get(null);
+        }
+        return null;
+    }
+
+    private static Object vertexSorting(Class<?> expectedClass) throws ReflectiveOperationException {
+        Class<?> sourceClass = classFor("vertexSorting.classes");
+        for (String fieldName : DescriptorProperties.values("vertexSorting.orthographicFields")) {
+            Field field = fieldOrNull(sourceClass, fieldName);
+            if (field == null || !expectedClass.isAssignableFrom(field.getType())) continue;
+
+            field.setAccessible(true);
+            return field.get(null);
+        }
+        return firstStaticValue(expectedClass);
+    }
+
+    private static Field fieldOrNull(Class<?> sourceClass, String name) {
+        Class<?> currentClass = sourceClass;
+        while (currentClass != null) {
+            try {
+                return currentClass.getDeclaredField(name);
+            } catch (NoSuchFieldException ignored) {
+            }
+            currentClass = currentClass.getSuperclass();
+        }
+        return null;
+    }
+
     private static boolean parametersMatch(Class<?>[] parameterTypes, Object[] args) {
         if (parameterTypes.length != args.length) return false;
 
@@ -246,6 +396,42 @@ final class MinecraftIconRenderer {
             return Class.forName(className);
         } catch (ClassNotFoundException ignored) {
             return null;
+        }
+    }
+
+    static final class IconRenderResult {
+        final String pngBase64;
+        final String status;
+        final int byteCount;
+
+        private IconRenderResult(String pngBase64, String status, int byteCount) {
+            this.pngBase64 = pngBase64;
+            this.status = status;
+            this.byteCount = byteCount;
+        }
+
+        static IconRenderResult success(String pngBase64, int byteCount) {
+            return new IconRenderResult(pngBase64, "ok", byteCount);
+        }
+
+        static IconRenderResult error(String status) {
+            return new IconRenderResult("", status, 0);
+        }
+
+        static IconRenderResult pending(String status) {
+            return new IconRenderResult("", "pending:" + status, 0);
+        }
+    }
+
+    private static final class RenderState {
+        final Object renderTarget;
+        final int width;
+        final int height;
+
+        RenderState(Object renderTarget, int width, int height) {
+            this.renderTarget = renderTarget;
+            this.width = width;
+            this.height = height;
         }
     }
 }

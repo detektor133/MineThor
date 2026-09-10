@@ -9,7 +9,6 @@ import java.lang.instrument.Instrumentation;
 
 public class startInjectors {
     public static void premain(String args, Instrumentation inst) {
-        MineThorBridgeServer.start();
         try {
             // Check if we have the asm classes we need
             Class.forName("org.objectweb.asm.ClassReader");
@@ -28,5 +27,6 @@ public class startInjectors {
             if (implVersion.equals("5.0.4")) ASM5OverrideInjector.premain(args, inst);
         } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
         }
+        MineThorBridgeServer.start();
     }
 }

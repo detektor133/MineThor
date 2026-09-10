@@ -13,6 +13,8 @@ Amethyst is a launcher that allows you to play Minecraft: Java Edition on your A
 
 For more details, check out our [wiki](https://wiki.angelauramc.dev)!
 
+> **This fork** adds **MineThor**, a companion HUD overlay (inspired by the AYN Thor handheld's companion screen) that mirrors live Minecraft state — player position, health, hunger, XP, and inventory with rendered item icons — on top of the game while it runs. See [MineThor](#minethor-companion-hud) below for how it works and its current limitations.
+
 ## Table of Contents
 
 * [Introduction](#introduction)
@@ -20,6 +22,7 @@ For more details, check out our [wiki](https://wiki.angelauramc.dev)!
 * [Building](#building)
     * [Quick Build (Recommended)](#quick-build-recommended)
     * [Detailed Build](#detailed-build)
+* [MineThor Companion HUD](#minethor-companion-hud)
 * [Current Status](#current-status)
 * [Known Issues](#known-issues)
 * [FAQ](#faq)
@@ -77,6 +80,22 @@ If you need more control over the build process, follow these steps:
 
 5. **Build the launcher:** `./gradlew :app_pojavlauncher:assembleDebug` (Replace `gradlew` with `gradlew.bat` on Windows).
 
+## MineThor Companion HUD
+
+MineThor is this fork's addition: a live HUD overlay that shows the running Minecraft game's player state (position, health, hunger, armor, XP, day time, held/inventory items with rendered icons) on top of the game surface, similar to a handheld console's companion screen.
+
+**How it works:**
+
+* A small Java agent (`methods_injector_agent/.../minethor`) is injected into the launched Minecraft JVM. It uses reflection to read live player/world state off the game's own objects (`ReflectiveMinecraftAdapter`), renders item icons on the Minecraft render thread (`MinecraftIconRenderer`), and serves both over a local loopback socket (`MineThorBridgeServer`).
+* The Android launcher (`app_pojavlauncher/.../minethor`) connects to that socket, decodes the protocol (`CompanionProtocolCodec`), and draws the HUD (`ThorHudView`) using textures pulled from the running Minecraft instance's own assets (`MineThorMinecraftAssets`) plus a bitmap font (`MineThorBitmapFont`).
+* Because Minecraft has no public/stable API for this, MineThor resolves the correct (obfuscated) method and field names for whatever version is launched by downloading Mojang's official `client_mappings` for that version and building a name descriptor from it at launch time (`MineThorMappingResolver`), rather than hardcoding names for one version. A fully hardcoded fallback table (`MappedMinecraftAdapter`) is used only if that dynamic resolution fails.
+
+**Known limitations:**
+
+* The icon-rendering path (`MinecraftIconRenderer`) calls into `GuiGraphics`, which only exists from Minecraft 1.20 onward — versions before 1.20 used a different (`PoseStack`-based) rendering pipeline, so item icon rendering does not work pre-1.20. Player state (position/health/inventory counts/etc.) does not depend on `GuiGraphics` and is not subject to this limit.
+* Mapping resolution degrades gracefully per-property now (one shifted method signature no longer invalidates the entire descriptor), but a from-scratch legacy render path for pre-1.20 icons hasn't been built yet.
+* Textures are now bound to the specific version being launched (`MineThorMinecraftAssets.setActiveVersion`) and re-resolved on every launch, rather than being cached for the life of the launcher process.
+
 ## Current Status
 
 * [x] OpenJDK 8 Mobile port: ARM32, ARM64, x86, x86_64
@@ -96,7 +115,14 @@ If you need more control over the build process, follow these steps:
 
 ## Known Issues
 
-See our [issue tracker](https://github.com/AngelAuraMC/Amethyst-Android/issues) for a list of known issues and their current status.
+For upstream launcher issues, see the [Amethyst issue tracker](https://github.com/AngelAuraMC/Amethyst-Android/issues).
+
+MineThor-specific:
+
+* Item icon rendering requires Minecraft 1.20+ (see [Known limitations](#minethor-companion-hud) above); player/world state HUD elements work on any version with official Mojang mappings.
+* The bridge agent reads live game state from the socket-reading thread without hopping onto Minecraft's client/render thread, so a state read racing a concurrent inventory mutation can occasionally surface as a one-tick "disconnected" HUD flicker rather than a crash.
+
+This is a first published pass of this fork — expect rough edges, and issues/PRs are welcome.
 
 ## FAQ
 

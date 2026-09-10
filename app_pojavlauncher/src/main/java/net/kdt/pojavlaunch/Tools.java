@@ -62,6 +62,7 @@ import net.kdt.pojavlaunch.lifecycle.LifecycleAwareAlertDialog;
 import net.kdt.pojavlaunch.memory.MemoryHoleFinder;
 import net.kdt.pojavlaunch.memory.SelfMapsParser;
 import net.kdt.pojavlaunch.minethor.MineThorMappingResolver;
+import net.kdt.pojavlaunch.minethor.MineThorMinecraftAssets;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
 import net.kdt.pojavlaunch.multirt.Runtime;
 import net.kdt.pojavlaunch.plugins.FFmpegPlugin;
@@ -510,6 +511,7 @@ public final class Tools {
         if (mineThorMappingDescriptor != null) {
             javaArgList.add("-Dminethor.mappingDescriptor=" + mineThorMappingDescriptor);
         }
+        MineThorMinecraftAssets.setActiveVersion(versionId);
         // We only ever reach this point when user has already used the force run switch
         boolean hasSodiumMod = false;
         for (String modName : sodiumMods) {

@@ -15,7 +15,8 @@ public final class InitialCompanionState {
                 0,
                 20,
                 0,
-                0
+                0,
+                0L
         );
         InventorySnapshot inventory = new InventorySnapshot(-1, -1);
         return new CompanionSnapshot(false, 0, player, inventory);

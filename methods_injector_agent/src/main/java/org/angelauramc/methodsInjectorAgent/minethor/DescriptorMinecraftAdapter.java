@@ -27,6 +27,11 @@ final class DescriptorMinecraftAdapter extends ReflectiveMinecraftAdapter {
     }
 
     @Override
+    protected String[] levelFields() {
+        return values("level.fields");
+    }
+
+    @Override
     protected String[] inventoryMethods() {
         return values("inventory.methods");
     }
@@ -159,6 +164,11 @@ final class DescriptorMinecraftAdapter extends ReflectiveMinecraftAdapter {
     @Override
     protected String[] xpLevelFields() {
         return values("xpLevel.fields");
+    }
+
+    @Override
+    protected String[] dayTimeAccessors() {
+        return values("dayTime.accessors");
     }
 
     private String value(String key) {

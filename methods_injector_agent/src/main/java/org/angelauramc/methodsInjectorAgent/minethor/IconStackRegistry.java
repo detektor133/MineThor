@@ -1,20 +1,28 @@
 package org.angelauramc.methodsInjectorAgent.minethor;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 final class IconStackRegistry {
-    private static final ConcurrentMap<String, Object> STACKS = new ConcurrentHashMap<>();
+    // Long play sessions can produce many distinct item/damage/enchant fingerprints;
+    // cap retention so this doesn't grow without bound for the life of the game process.
+    private static final int MAX_ENTRIES = 512;
+    private static final Map<String, Object> STACKS = new LinkedHashMap<String, Object>(16, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, Object> eldest) {
+            return size() > MAX_ENTRIES;
+        }
+    };
 
     private IconStackRegistry() {
     }
 
-    static void put(String iconKey, Object itemStack) {
+    static synchronized void put(String iconKey, Object itemStack) {
         if (iconKey == null || iconKey.isEmpty() || itemStack == null) return;
         STACKS.put(iconKey, itemStack);
     }
 
-    static Object get(String iconKey) {
+    static synchronized Object get(String iconKey) {
         if (iconKey == null || iconKey.isEmpty()) return null;
         return STACKS.get(iconKey);
     }

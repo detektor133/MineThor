@@ -57,6 +57,11 @@ public final class CompanionProtocolCodec {
             return new CompanionSnapshot(message.optBoolean("connected", true), commandAckFromJson(current, message), player, inventory);
         }
         if ("ICON_DATA".equals(type)) {
+            MineThorIconCache.logDataStatus(
+                    message.optString("iconKey", ""),
+                    message.optString("debugStatus", ""),
+                    message.optInt("debugBytes", 0)
+            );
             MineThorIconCache.put(message.optString("iconKey", ""), message.optString("pngBase64", ""));
             return current;
         }
@@ -118,7 +123,8 @@ public final class CompanionProtocolCodec {
                 message.optInt("food", current.food),
                 message.optInt("maxFood", current.maxFood),
                 message.optInt("armor", current.armor),
-                message.optInt("xpLevel", current.xpLevel)
+                message.optInt("xpLevel", current.xpLevel),
+                message.optLong("dayTime", current.dayTime)
         );
     }
 
@@ -144,6 +150,7 @@ public final class CompanionProtocolCodec {
         message.put("maxFood", player.maxFood);
         message.put("armor", player.armor);
         message.put("xpLevel", player.xpLevel);
+        message.put("dayTime", player.dayTime);
         return message;
     }
 

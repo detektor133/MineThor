@@ -7,6 +7,7 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     };
     private static final String[] CLIENT_INSTANCE_METHODS = {"getInstance", "getMinecraft"};
     private static final String[] PLAYER_FIELDS = {"player", "thePlayer", "field_1724", "f_91074_"};
+    private static final String[] LEVEL_FIELDS = {"level", "world", "theWorld", "field_1687", "f_91073_"};
     private static final String[] INVENTORY_METHODS = {"getInventory", "method_31548", "m_150109_"};
     private static final String[] INVENTORY_FIELDS = {"inventory", "field_71071_by", "f_36095_"};
     private static final String[] INVENTORY_CLASS_NAMES = {};
@@ -34,6 +35,7 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     private static final String[] ARMOR_ACCESSORS = {"getArmorValue", "getArmor", "method_6096", "m_21230_"};
     private static final String[] FOOD_DATA_ACCESSORS = {"getFoodData", "getHungerManager", "method_7344", "m_36324_"};
     private static final String[] XP_LEVEL_FIELDS = {"experienceLevel", "field_7520", "f_108650_"};
+    private static final String[] DAY_TIME_ACCESSORS = {"getDayTime", "getTimeOfDay", "getWorldTime", "method_8532", "m_46468_"};
 
     @Override
     public String name() {
@@ -53,6 +55,11 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     @Override
     protected String[] playerFields() {
         return PLAYER_FIELDS;
+    }
+
+    @Override
+    protected String[] levelFields() {
+        return LEVEL_FIELDS;
     }
 
     @Override
@@ -188,5 +195,10 @@ final class MappedMinecraftAdapter extends ReflectiveMinecraftAdapter {
     @Override
     protected String[] xpLevelFields() {
         return XP_LEVEL_FIELDS;
+    }
+
+    @Override
+    protected String[] dayTimeAccessors() {
+        return DAY_TIME_ACCESSORS;
     }
 }

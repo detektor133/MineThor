@@ -25,6 +25,7 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
 
             Object inventory = inventory(player);
             Object foodData = invokeFirst(player, foodDataAccessors());
+            Object level = fieldValue(client, levelFields());
             return new MinecraftSnapshot(
                     true,
                     roundedDouble(player, 0, xAccessors()),
@@ -37,6 +38,7 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
                     20,
                     intFrom(player, 0, armorAccessors()),
                     intField(player, 0, xpLevelFields()),
+                    longFrom(level, 0L, dayTimeAccessors()),
                     inventory == null ? -1 : intField(inventory, -1, selectedSlotFields()),
                     -1,
                     inventory == null ? MinecraftSnapshot.emptySlots(36) : inventorySlots(inventory, mainInventoryFields(), 36),
@@ -76,6 +78,8 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
     protected abstract String[] clientInstanceMethods();
 
     protected abstract String[] playerFields();
+
+    protected abstract String[] levelFields();
 
     protected abstract String[] inventoryMethods();
 
@@ -131,6 +135,8 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
 
     protected abstract String[] xpLevelFields();
 
+    protected abstract String[] dayTimeAccessors();
+
     private Object minecraftClient() throws ReflectiveOperationException {
         for (String className : clientClasses()) {
             Class<?> clientClass = classOrNull(className);
@@ -172,6 +178,12 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
     private static int intFrom(Object target, int fallback, String... names) throws ReflectiveOperationException {
         Object value = invokeFirst(target, names);
         if (value instanceof Number) return ((Number) value).intValue();
+        return fallback;
+    }
+
+    private static long longFrom(Object target, long fallback, String... names) throws ReflectiveOperationException {
+        Object value = invokeFirst(target, names);
+        if (value instanceof Number) return ((Number) value).longValue();
         return fallback;
     }
 

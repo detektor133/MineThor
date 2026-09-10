@@ -11,6 +11,7 @@ public class PlayerSnapshot {
     public final int maxFood;
     public final int armor;
     public final int xpLevel;
+    public final long dayTime;
 
     public PlayerSnapshot(
             int x,
@@ -22,7 +23,8 @@ public class PlayerSnapshot {
             int food,
             int maxFood,
             int armor,
-            int xpLevel
+            int xpLevel,
+            long dayTime
     ) {
         this.x = x;
         this.y = y;
@@ -34,5 +36,6 @@ public class PlayerSnapshot {
         this.maxFood = maxFood;
         this.armor = armor;
         this.xpLevel = xpLevel;
+        this.dayTime = dayTime;
     }
 }

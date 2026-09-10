@@ -24,7 +24,7 @@ public final class MineThorMappingResolver {
     private static final String TAG = "MineThorMapping";
     private static final String DOWNLOAD_CLIENT_MAPPINGS = "client_mappings";
     private static final String DESCRIPTOR_NAME = "descriptor.properties";
-    private static final String DESCRIPTOR_SCHEMA_VERSION = "4";
+    private static final String DESCRIPTOR_SCHEMA_VERSION = "6";
 
     private MineThorMappingResolver() {
     }
@@ -130,11 +130,16 @@ public final class MineThorMappingResolver {
         String playerClass = index.className("net.minecraft.world.entity.player.Player");
         String entityClass = index.className("net.minecraft.world.entity.Entity");
         String livingEntityClass = index.className("net.minecraft.world.entity.LivingEntity");
+        String levelClass = index.className("net.minecraft.world.level.Level");
         String inventoryClass = index.className("net.minecraft.world.entity.player.Inventory");
         String itemStackClass = index.className("net.minecraft.world.item.ItemStack");
         String componentClass = index.className("net.minecraft.network.chat.Component");
+        String poseStackClass = index.className("com.mojang.blaze3d.vertex.PoseStack");
+        String vertexSortingClass = index.className("com.mojang.blaze3d.vertex.VertexSorting");
+        String windowClass = index.className("com.mojang.blaze3d.platform.Window");
 
-        if (!allPresent(clientClass, playerClass, entityClass, livingEntityClass, inventoryClass, itemStackClass, componentClass)) {
+        if (!allPresent(clientClass, playerClass, entityClass, livingEntityClass, levelClass, inventoryClass, itemStackClass,
+                componentClass, poseStackClass, vertexSortingClass, windowClass)) {
             Log.i(TAG, "Mappings are missing required classes for " + versionId);
             return null;
         }
@@ -145,6 +150,7 @@ public final class MineThorMappingResolver {
         descriptor.setProperty("client.classes", clientClass);
         descriptor.setProperty("client.instanceMethods", index.methodName("net.minecraft.client.Minecraft", "getInstance"));
         descriptor.setProperty("player.fields", index.fieldName("net.minecraft.client.Minecraft", "player"));
+        descriptor.setProperty("level.fields", index.fieldName("net.minecraft.client.Minecraft", "level"));
         descriptor.setProperty("inventory.methods", index.methodName("net.minecraft.world.entity.player.Player", "getInventory"));
         descriptor.setProperty("inventory.fields", index.fieldName("net.minecraft.world.entity.player.Player", "inventory"));
         descriptor.setProperty("inventory.classNames", inventoryClass);
@@ -162,7 +168,6 @@ public final class MineThorMappingResolver {
         descriptor.setProperty("itemStack.tagMethods", index.methodName("net.minecraft.world.item.ItemStack", "getTag"));
         descriptor.setProperty("itemStack.foilMethods", index.methodName("net.minecraft.world.item.ItemStack", "hasFoil"));
         descriptor.setProperty("component.stringMethods", index.methodName("net.minecraft.network.chat.Component", "getString"));
-        descriptor.setProperty("client.submitSupplierMethods", index.methodName("net.minecraft.util.thread.BlockableEventLoop", "submit", 1));
         descriptor.setProperty("guiGraphics.classes", index.className("net.minecraft.client.gui.GuiGraphics"));
         descriptor.setProperty("guiGraphics.renderItemMethods", index.methodName("net.minecraft.client.gui.GuiGraphics", "renderItem", 3));
         descriptor.setProperty("guiGraphics.flushMethods", index.methodName("net.minecraft.client.gui.GuiGraphics", "flush"));
@@ -175,10 +180,20 @@ public final class MineThorMappingResolver {
         descriptor.setProperty("renderTarget.bindWriteMethods", index.methodName("com.mojang.blaze3d.pipeline.RenderTarget", "bindWrite", 1));
         descriptor.setProperty("renderTarget.unbindWriteMethods", index.methodName("com.mojang.blaze3d.pipeline.RenderTarget", "unbindWrite"));
         descriptor.setProperty("renderTarget.destroyBuffersMethods", index.methodName("com.mojang.blaze3d.pipeline.RenderTarget", "destroyBuffers"));
+        descriptor.setProperty("mainRenderTarget.fields", index.fieldName("net.minecraft.client.Minecraft", "mainRenderTarget"));
         descriptor.setProperty("screenshot.classes", index.className("net.minecraft.client.Screenshot"));
         descriptor.setProperty("screenshot.takeMethods", index.methodName("net.minecraft.client.Screenshot", "takeScreenshot", 1));
         descriptor.setProperty("nativeImage.byteArrayMethods", index.methodName("com.mojang.blaze3d.platform.NativeImage", "asByteArray"));
         descriptor.setProperty("nativeImage.closeMethods", "close");
+        descriptor.setProperty("poseStack.classes", poseStackClass);
+        descriptor.setProperty("poseStack.setIdentityMethods", index.methodName("com.mojang.blaze3d.vertex.PoseStack", "setIdentity"));
+        descriptor.setProperty("poseStack.translateMethods", index.methodName("com.mojang.blaze3d.vertex.PoseStack", "translate", 3));
+        descriptor.setProperty("poseStack.scaleMethods", index.methodName("com.mojang.blaze3d.vertex.PoseStack", "scale", 3));
+        descriptor.setProperty("vertexSorting.classes", vertexSortingClass);
+        descriptor.setProperty("vertexSorting.orthographicFields", index.fieldName("com.mojang.blaze3d.vertex.VertexSorting", "ORTHOGRAPHIC_Z"));
+        descriptor.setProperty("window.fields", index.fieldName("net.minecraft.client.Minecraft", "window"));
+        descriptor.setProperty("window.widthMethods", index.methodName("com.mojang.blaze3d.platform.Window", "getWidth"));
+        descriptor.setProperty("window.heightMethods", index.methodName("com.mojang.blaze3d.platform.Window", "getHeight"));
         descriptor.setProperty("x.accessors", index.methodName("net.minecraft.world.entity.Entity", "getX"));
         descriptor.setProperty("y.accessors", index.methodName("net.minecraft.world.entity.Entity", "getY"));
         descriptor.setProperty("z.accessors", index.methodName("net.minecraft.world.entity.Entity", "getZ"));
@@ -189,6 +204,7 @@ public final class MineThorMappingResolver {
         descriptor.setProperty("foodData.accessors", index.methodName("net.minecraft.world.entity.player.Player", "getFoodData"));
         descriptor.setProperty("food.accessors", index.methodName("net.minecraft.world.food.FoodData", "getFoodLevel"));
         descriptor.setProperty("xpLevel.fields", index.fieldName("net.minecraft.world.entity.player.Player", "experienceLevel"));
+        descriptor.setProperty("dayTime.accessors", index.methodName("net.minecraft.world.level.Level", "getDayTime"));
 
         if (!requiredDescriptorValuesPresent(descriptor)) {
             Log.i(TAG, "Generated descriptor is incomplete for " + versionId);
@@ -202,6 +218,7 @@ public final class MineThorMappingResolver {
                 descriptor.getProperty("client.classes"),
                 descriptor.getProperty("client.instanceMethods"),
                 descriptor.getProperty("player.fields"),
+                descriptor.getProperty("level.fields"),
                 descriptor.getProperty("inventory.classNames"),
                 descriptor.getProperty("selectedSlot.fields"),
                 descriptor.getProperty("mainInventory.fields"),
@@ -217,7 +234,6 @@ public final class MineThorMappingResolver {
                 descriptor.getProperty("itemStack.tagMethods"),
                 descriptor.getProperty("itemStack.foilMethods"),
                 descriptor.getProperty("component.stringMethods"),
-                descriptor.getProperty("client.submitSupplierMethods"),
                 descriptor.getProperty("guiGraphics.classes"),
                 descriptor.getProperty("guiGraphics.renderItemMethods"),
                 descriptor.getProperty("guiGraphics.flushMethods"),
@@ -230,17 +246,28 @@ public final class MineThorMappingResolver {
                 descriptor.getProperty("renderTarget.bindWriteMethods"),
                 descriptor.getProperty("renderTarget.unbindWriteMethods"),
                 descriptor.getProperty("renderTarget.destroyBuffersMethods"),
+                descriptor.getProperty("mainRenderTarget.fields"),
                 descriptor.getProperty("screenshot.classes"),
                 descriptor.getProperty("screenshot.takeMethods"),
                 descriptor.getProperty("nativeImage.byteArrayMethods"),
                 descriptor.getProperty("nativeImage.closeMethods"),
+                descriptor.getProperty("poseStack.classes"),
+                descriptor.getProperty("poseStack.setIdentityMethods"),
+                descriptor.getProperty("poseStack.translateMethods"),
+                descriptor.getProperty("poseStack.scaleMethods"),
+                descriptor.getProperty("vertexSorting.classes"),
+                descriptor.getProperty("vertexSorting.orthographicFields"),
+                descriptor.getProperty("window.fields"),
+                descriptor.getProperty("window.widthMethods"),
+                descriptor.getProperty("window.heightMethods"),
                 descriptor.getProperty("x.accessors"),
                 descriptor.getProperty("y.accessors"),
                 descriptor.getProperty("z.accessors"),
                 descriptor.getProperty("yaw.accessors"),
                 descriptor.getProperty("health.accessors"),
                 descriptor.getProperty("maxHealth.accessors"),
-                descriptor.getProperty("armor.accessors")
+                descriptor.getProperty("armor.accessors"),
+                descriptor.getProperty("dayTime.accessors")
         );
     }
 
@@ -293,8 +320,24 @@ public final class MineThorMappingResolver {
 
         String methodName(String officialClass, String officialName, int arity) {
             Map<String, String> classMethods = methods.get(officialClass);
-            String name = classMethods == null ? null : classMethods.get(methodKey(officialName, arity));
-            return name == null ? "" : name;
+            if (classMethods == null) return "";
+
+            String name = classMethods.get(methodKey(officialName, arity));
+            if (name != null) return name;
+
+            // Mojang occasionally changes a method's arity between versions (e.g. an
+            // added parameter). The exact arity we expected is only a hint from the
+            // version this code was written against - fall back to whichever arity
+            // the current mappings actually have for this method name, rather than
+            // rejecting the whole descriptor over one shifted parameter count.
+            String fallback = null;
+            for (Map.Entry<String, String> entry : classMethods.entrySet()) {
+                if (entry.getKey().startsWith(officialName + "#")) {
+                    if (fallback != null) return ""; // ambiguous - multiple overloads, can't guess
+                    fallback = entry.getValue();
+                }
+            }
+            return fallback == null ? "" : fallback;
         }
 
         private String readClass(String line) {

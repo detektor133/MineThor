@@ -60,7 +60,10 @@ public final class MineThorBridgeServer {
             while (!clientSocket.isClosed()) {
                 Command command = readCommandIfAvailable(input);
                 if (command != null && "REQUEST_ICON".equals(command.type)) {
-                    writeMessage(output, iconMessage(command.iconKey, iconRenderer.renderIconBase64(command.iconKey)));
+                    MinecraftIconRenderer.IconRenderResult result = iconRenderer.requestIcon(command.iconKey);
+                    if (!result.status.startsWith("pending:")) {
+                        writeMessage(output, iconMessage(command.iconKey, result));
+                    }
                 } else if (command != null && command.commandId > lastAppliedCommandId) {
                     boolean applied = applyCommand(minecraftStateAccess, command);
                     if (applied) {
@@ -68,6 +71,11 @@ public final class MineThorBridgeServer {
                         writeMessage(output, snapshotMessage(minecraftStateAccess.readSnapshot(), lastAppliedCommandId));
                         lastSnapshotAt = System.currentTimeMillis();
                     }
+                }
+
+                MineThorRenderQueue.CompletedIcon completedIcon;
+                while ((completedIcon = iconRenderer.pollCompletedIcon()) != null) {
+                    writeMessage(output, iconMessage(completedIcon.iconKey, completedIcon.result));
                 }
 
                 long now = System.currentTimeMillis();
@@ -127,6 +135,7 @@ public final class MineThorBridgeServer {
                 + ",\"maxFood\":" + snapshot.maxFood
                 + ",\"armor\":" + snapshot.armor
                 + ",\"xpLevel\":" + snapshot.xpLevel
+                + ",\"dayTime\":" + snapshot.dayTime
                 + "},\"inventory\":{"
                 + "\"selectedHotbarSlot\":" + snapshot.selectedHotbarSlot
                 + ",\"selectedInventorySlot\":" + snapshot.selectedInventorySlot
@@ -136,10 +145,12 @@ public final class MineThorBridgeServer {
                 + "}}";
     }
 
-    private static String iconMessage(String iconKey, String pngBase64) {
+    private static String iconMessage(String iconKey, MinecraftIconRenderer.IconRenderResult result) {
         return "{\"type\":\"ICON_DATA\",\"protocolVersion\":" + PROTOCOL_VERSION
                 + ",\"iconKey\":\"" + escapeJson(iconKey) + "\""
-                + ",\"pngBase64\":\"" + escapeJson(pngBase64) + "\"}";
+                + ",\"debugStatus\":\"" + escapeJson(result.status) + "\""
+                + ",\"debugBytes\":" + result.byteCount
+                + ",\"pngBase64\":\"" + escapeJson(result.pngBase64) + "\"}";
     }
 
     private static String slotsMessage(InventorySlotSnapshot[] slots) {
