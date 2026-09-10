@@ -66,6 +66,8 @@ import net.kdt.pojavlaunch.customcontrols.mouse.GyroControl;
 import net.kdt.pojavlaunch.customcontrols.mouse.HotbarView;
 import net.kdt.pojavlaunch.customcontrols.mouse.Touchpad;
 import net.kdt.pojavlaunch.lifecycle.ContextExecutor;
+import net.kdt.pojavlaunch.minethor.MineThorMappingResolver;
+import net.kdt.pojavlaunch.minethor.ThorCompanionDisplayController;
 import net.kdt.pojavlaunch.prefs.LauncherPreferences;
 import net.kdt.pojavlaunch.prefs.QuickSettingSideDialog;
 import net.kdt.pojavlaunch.services.GameService;
@@ -120,6 +122,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     private GameService.LocalBinder mServiceBinder;
 
     private QuickSettingSideDialog mQuickSettingSideDialog;
+    private ThorCompanionDisplayController mineThorCompanionDisplayController;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -135,6 +138,8 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         // Start the service a bit early
         ContextCompat.startForegroundService(this, gameServiceIntent);
         initLayout(R.layout.activity_basemain);
+        mineThorCompanionDisplayController = new ThorCompanionDisplayController(this, null);
+        mineThorCompanionDisplayController.start();
         CallbackBridge.addGrabListener(touchpad);
         CallbackBridge.addGrabListener(minecraftGLView);
 
@@ -209,6 +214,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
         ContextExecutor.setActivity(this);
         //Now, attach to the service. The game will only start when this happens, to make sure that we know the right state.
         bindService(gameServiceIntent, this, 0);
+        MineThorMappingResolver.backfillInstalledVersions();
     }
 
     protected void initLayout(int resId) {
@@ -343,6 +349,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
     public void onResume() {
         super.onResume();
         if(PREF_ENABLE_GYRO) mGyroControl.enable();
+        if (mineThorCompanionDisplayController != null) mineThorCompanionDisplayController.showCompanion();
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_FOCUSED, 1);
         CallbackBridge.nativeSetWindowAttrib(LwjglGlfwKeycode.GLFW_HOVERED, 1);
     }
@@ -376,6 +383,7 @@ public class MainActivity extends BaseActivity implements ControlButtonMenuListe
 
     @Override
     protected void onDestroy() {
+        if (mineThorCompanionDisplayController != null) mineThorCompanionDisplayController.stop();
         super.onDestroy();
         CallbackBridge.removeGrabListener(touchpad);
         CallbackBridge.removeGrabListener(minecraftGLView);
