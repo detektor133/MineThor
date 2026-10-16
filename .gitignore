@@ -20,3 +20,5 @@ app_pojavlauncher/.cxx/
 # Built by Gradle (:minethor_agent:jar), not tracked
 /app_pojavlauncher/src/main/assets/components/minethor_agent/
 *.keystore.properties
+# Local-network deploy helper (has the device's LAN IP), never shared
+/scripts/minethor/deploy-thor.local.ps1
