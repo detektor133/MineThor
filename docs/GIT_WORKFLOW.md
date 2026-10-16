@@ -58,6 +58,7 @@ git submodule update --init --recursive
 | `.../fragments/MainMenuFragment.java` + `layout*/fragment_launcher.xml` | кнопка Thor probe | вход в проверочный экран |
 | `AndroidManifest.xml` | `<activity ThorCompanionActivity>` | регистрация Activity |
 | `.gitignore` | блок `# --- MineThor ---` в конце | игнор артефактов |
+| `.github/workflows/android.yml` | `if: env.GPLAY_KEYSTORE_PASSWORD != ''` на трёх release-шагах (по строке с комментарием `MineThor fork`) | в форке нет секрета подписи release, CI падал на `assembleRelease` даже на чистом зеркале upstream |
 | `README.md` | раздел MineThor | документация |
 
 Намеренно **не** трогаем (это самые «горячие» файлы upstream, на них и ломался rebase): `JREUtils.java`, `AsyncAssetManager.java`, список `componentJars` в `app_pojavlauncher/build.gradle`, `res/values/strings.xml`.
