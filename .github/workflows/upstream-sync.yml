@@ -1,0 +1,41 @@
+name: Upstream sync check
+
+# Weekly: verify that our patches still rebase cleanly onto AngelAuraMC/Amethyst-Android.
+# It only reports; it never pushes. See docs/GIT_WORKFLOW.md.
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/dualscreen
+          fetch-depth: 0
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/AngelAuraMC/Amethyst-Android.git
+          git fetch upstream v3_openjdk
+
+      - name: Common ancestor must exist
+        run: |
+          git merge-base HEAD upstream/v3_openjdk
+          echo "behind: $(git rev-list --count HEAD..upstream/v3_openjdk)  ahead: $(git rev-list --count upstream/v3_openjdk..HEAD)"
+
+      - name: Trial merge (conflict list)
+        run: |
+          base=$(git merge-base HEAD upstream/v3_openjdk)
+          set +e
+          out=$(git merge-tree --write-tree --name-only --no-messages --merge-base="$base" HEAD upstream/v3_openjdk)
+          code=$?
+          set -e
+          if [ "$code" -ne 0 ]; then
+            echo "::error::Rebase onto upstream will conflict. Files:"
+            echo "$out" | tail -n +2
+            exit 1
+          fi
+          echo "No conflicts."
