@@ -1,0 +1,22 @@
+plugins {
+    id 'java-library'
+}
+
+// The agent runs inside the game JVM, which may be OpenJDK 8, 17 or 21: keep to the Java 8 API.
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
+
+// The jar destination and the "version" file are configured for every subproject by the root
+// build.gradle (components/<project name>/), so only the manifest is needed here.
+jar {
+    archiveBaseName.set("minethor_agent")
+    manifest {
+        attributes("Manifest-Version": "1.0",
+                "PreMain-Class": "dev.minethor.agent.MineThorAgent")
+    }
+    // Reproducible jar so the version file really changes only when the code does
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}

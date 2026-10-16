@@ -255,3 +255,4 @@ dependencies {
 
 }
 apply from: rootProject.file('gradle/prefab_bypass.gradle')
+apply from: rootProject.file('minethor_agent/launcher-wiring.gradle') // MineThor: build the companion agent jar

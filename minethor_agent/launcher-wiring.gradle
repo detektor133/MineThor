@@ -1,0 +1,9 @@
+// Applied from the END of app_pojavlauncher/build.gradle (one line, see docs/GIT_WORKFLOW.md).
+//
+// Makes the launcher build the MineThor agent jar before its assets are merged. This cannot live
+// in minethor_agent/build.gradle: the repository uses org.gradle.configureondemand=true, so that
+// script is not evaluated when only the launcher is built. The project is referenced by path
+// string, which lets Gradle configure :minethor_agent on demand.
+tasks.matching { it.name ==~ /merge.*Assets/ || it.name.toLowerCase().contains('lint') }.configureEach { t ->
+    t.dependsOn(':minethor_agent:jar')
+}
