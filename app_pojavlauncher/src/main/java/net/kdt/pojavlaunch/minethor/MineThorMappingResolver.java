@@ -24,7 +24,7 @@ public final class MineThorMappingResolver {
     private static final String TAG = "MineThorMapping";
     private static final String DOWNLOAD_CLIENT_MAPPINGS = "client_mappings";
     private static final String DESCRIPTOR_NAME = "descriptor.properties";
-    private static final String DESCRIPTOR_SCHEMA_VERSION = "6";
+    private static final String DESCRIPTOR_SCHEMA_VERSION = "7";
 
     private MineThorMappingResolver() {
     }
@@ -62,11 +62,21 @@ public final class MineThorMappingResolver {
 
     private static File resolveDescriptor(String versionId, JMinecraftVersionList.Version versionInfo) throws IOException {
         JMinecraftVersionList.Version mappingVersion = mappingVersion(versionId, versionInfo);
-        if (mappingVersion == null || mappingVersion.downloads == null) return null;
+        boolean hasMappings = mappingVersion != null && mappingVersion.downloads != null
+                && mappingVersion.downloads.get(DOWNLOAD_CLIENT_MAPPINGS) != null
+                && Tools.isValidString(mappingVersion.downloads.get(DOWNLOAD_CLIENT_MAPPINGS).url);
+
+        // No official Mojang mapping exists anywhere in the inheritsFrom chain for this version.
+        // This is normal and expected for two very different cases we cannot tell apart up front
+        // (we only know "no mapping", never a version number): versions before 1.14.4, where names
+        // really are obfuscated and this will correctly fail at runtime (degraded, as before); and
+        // versions from (the snapshot that became) 26.1 onward, where Mojang stopped shipping client
+        // mappings because the game is no longer obfuscated at all - there the canonical names ARE
+        // the runtime names, so no dictionary is needed, and this path makes MineThor work on them
+        // with zero network cost. See docs/COMPATIBILITY.md.
+        if (!hasMappings) return resolveIdentityDescriptor(versionId);
 
         MinecraftClientInfo mappingsInfo = mappingVersion.downloads.get(DOWNLOAD_CLIENT_MAPPINGS);
-        if (mappingsInfo == null || !Tools.isValidString(mappingsInfo.url)) return null;
-
         File cacheDir = mappingCacheDir(mappingVersion.id == null ? versionId : mappingVersion.id);
         File descriptorFile = new File(cacheDir, DESCRIPTOR_NAME);
         if (isCachedDescriptorCurrent(descriptorFile)) return descriptorFile;
@@ -79,7 +89,7 @@ public final class MineThorMappingResolver {
         });
 
         MappingIndex index = MappingIndex.read(mappingsFile);
-        Properties descriptor = buildDescriptor(mappingVersion.id == null ? versionId : mappingVersion.id, index);
+        Properties descriptor = buildDescriptor("mojang-" + (mappingVersion.id == null ? versionId : mappingVersion.id), index);
         if (descriptor == null) return null;
 
         FileUtils.ensureParentDirectory(descriptorFile);
@@ -87,6 +97,29 @@ public final class MineThorMappingResolver {
             descriptor.store(writer, "MineThor generated mapping descriptor");
         }
         Log.i(TAG, "Generated mapping descriptor for " + versionId + ": " + descriptorFile.getAbsolutePath());
+        return descriptorFile;
+    }
+
+    /**
+     * No dictionary needed or available: builds a descriptor straight from the canonical class/member
+     * names we already use as lookup keys against real mappings. Correct when the running game is
+     * unobfuscated; harmless and simply unavailable (same as returning null today) when it is an old
+     * obfuscated version we have no dictionary for - every name lookup below just won't resolve, and
+     * the agent already treats missing descriptor values as a degraded, not a failing, state.
+     */
+    private static File resolveIdentityDescriptor(String versionId) throws IOException {
+        File cacheDir = mappingCacheDir(versionId + "-identity");
+        File descriptorFile = new File(cacheDir, DESCRIPTOR_NAME);
+        if (isCachedDescriptorCurrent(descriptorFile)) return descriptorFile;
+
+        Properties descriptor = buildDescriptor("identity-" + versionId, IdentityIndex.INSTANCE);
+        if (descriptor == null) return null;
+
+        FileUtils.ensureParentDirectory(descriptorFile);
+        try (FileWriter writer = new FileWriter(descriptorFile)) {
+            descriptor.store(writer, "MineThor generated mapping descriptor (no obfuscation dictionary needed)");
+        }
+        Log.i(TAG, "Generated identity mapping descriptor for " + versionId + ": " + descriptorFile.getAbsolutePath());
         return descriptorFile;
     }
 
@@ -125,7 +158,7 @@ public final class MineThorMappingResolver {
         }
     }
 
-    private static Properties buildDescriptor(String versionId, MappingIndex index) {
+    private static Properties buildDescriptor(String versionId, NameIndex index) {
         String clientClass = index.className("net.minecraft.client.Minecraft");
         String playerClass = index.className("net.minecraft.world.entity.player.Player");
         String entityClass = index.className("net.minecraft.world.entity.Entity");
@@ -146,7 +179,7 @@ public final class MineThorMappingResolver {
 
         Properties descriptor = new Properties();
         descriptor.setProperty("schema", DESCRIPTOR_SCHEMA_VERSION);
-        descriptor.setProperty("name", "mojang-" + versionId);
+        descriptor.setProperty("name", versionId);
         descriptor.setProperty("client.classes", clientClass);
         descriptor.setProperty("client.instanceMethods", index.methodName("net.minecraft.client.Minecraft", "getInstance"));
         descriptor.setProperty("player.fields", index.fieldName("net.minecraft.client.Minecraft", "player"));
@@ -272,13 +305,56 @@ public final class MineThorMappingResolver {
     }
 
     private static boolean allPresent(String... values) {
+        // Deliberately not Tools.isValidString: buildDescriptor()/this method are pure name-table
+        // logic with no Android dependency, which is what lets MineThorMappingResolverTest exercise
+        // them directly on a plain JVM (loading Tools touches android.os.Looper in its <clinit>).
         for (String value : values) {
-            if (!Tools.isValidString(value)) return false;
+            if (value == null || value.isEmpty()) return false;
         }
         return true;
     }
 
-    private static final class MappingIndex {
+    /** The three lookups {@link #buildDescriptor} needs, independent of where the names come from. */
+    private interface NameIndex {
+        String className(String canonicalName);
+
+        String fieldName(String canonicalClass, String canonicalField);
+
+        String methodName(String canonicalClass, String canonicalMethod);
+
+        String methodName(String canonicalClass, String canonicalMethod, int arity);
+    }
+
+    /**
+     * No translation at all: returns every queried name unchanged. Correct when the running game's
+     * classes are not obfuscated, i.e. use their canonical Mojang names directly - see
+     * {@link #resolveIdentityDescriptor}.
+     */
+    private static final class IdentityIndex implements NameIndex {
+        static final IdentityIndex INSTANCE = new IdentityIndex();
+
+        @Override
+        public String className(String canonicalName) {
+            return canonicalName;
+        }
+
+        @Override
+        public String fieldName(String canonicalClass, String canonicalField) {
+            return canonicalField;
+        }
+
+        @Override
+        public String methodName(String canonicalClass, String canonicalMethod) {
+            return canonicalMethod;
+        }
+
+        @Override
+        public String methodName(String canonicalClass, String canonicalMethod, int arity) {
+            return canonicalMethod;
+        }
+    }
+
+    private static final class MappingIndex implements NameIndex {
         private final Map<String, String> classes = new HashMap<>();
         private final Map<String, Map<String, String>> fields = new HashMap<>();
         private final Map<String, Map<String, String>> methods = new HashMap<>();
@@ -304,21 +380,26 @@ public final class MineThorMappingResolver {
             return index;
         }
 
-        String className(String officialName) {
-            return classes.get(officialName);
+        @Override
+        public String className(String officialName) {
+            String name = classes.get(officialName);
+            return name == null ? "" : name;
         }
 
-        String fieldName(String officialClass, String officialName) {
+        @Override
+        public String fieldName(String officialClass, String officialName) {
             Map<String, String> classFields = fields.get(officialClass);
             String name = classFields == null ? null : classFields.get(officialName);
             return name == null ? "" : name;
         }
 
-        String methodName(String officialClass, String officialName) {
+        @Override
+        public String methodName(String officialClass, String officialName) {
             return methodName(officialClass, officialName, 0);
         }
 
-        String methodName(String officialClass, String officialName, int arity) {
+        @Override
+        public String methodName(String officialClass, String officialName, int arity) {
             Map<String, String> classMethods = methods.get(officialClass);
             if (classMethods == null) return "";
 
