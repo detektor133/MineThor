@@ -5,8 +5,12 @@ import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
+    private Object cachedExecutorClient;
+    private Executor cachedExecutor;
+
     @Override
     public boolean isAvailable() {
         try {
@@ -136,6 +140,50 @@ abstract class ReflectiveMinecraftAdapter implements MinecraftAdapter {
     protected abstract String[] xpLevelFields();
 
     protected abstract String[] dayTimeAccessors();
+
+    /**
+     * Finds the game's way to run something on its main thread without any version-specific name:
+     * modern clients are {@link Executor}s (BlockableEventLoop); older ones have exactly one public
+     * instance method taking a single Runnable (addScheduledTask).
+     */
+    @Override
+    public Executor clientExecutor() {
+        try {
+            final Object client = minecraftClient();
+            if (client == cachedExecutorClient) return cachedExecutor;
+            cachedExecutorClient = client;
+            cachedExecutor = null;
+            if (client instanceof Executor) return cachedExecutor = (Executor) client;
+
+            final Method scheduler = runnableSchedulerMethod(client.getClass());
+            if (scheduler == null) return null;
+            scheduler.setAccessible(true);
+            return cachedExecutor = runnable -> {
+                try {
+                    scheduler.invoke(client, runnable);
+                } catch (ReflectiveOperationException e) {
+                    throw new IllegalStateException(e);
+                }
+            };
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private static Method runnableSchedulerMethod(Class<?> type) {
+        Method found = null;
+        for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
+            for (Method method : c.getDeclaredMethods()) {
+                if (java.lang.reflect.Modifier.isStatic(method.getModifiers())) continue;
+                if (!java.lang.reflect.Modifier.isPublic(method.getModifiers())) continue;
+                Class<?>[] parameters = method.getParameterTypes();
+                if (parameters.length != 1 || parameters[0] != Runnable.class) continue;
+                if (found != null && !found.getName().equals(method.getName())) return null; // ambiguous
+                if (found == null) found = method;
+            }
+        }
+        return found;
+    }
 
     private Object minecraftClient() throws ReflectiveOperationException {
         for (String className : clientClasses()) {

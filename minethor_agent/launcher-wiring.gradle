@@ -7,3 +7,10 @@
 tasks.matching { it.name ==~ /merge.*Assets/ || it.name.toLowerCase().contains('lint') }.configureEach { t ->
     t.dependsOn(':minethor_agent:jar')
 }
+
+// JVM unit tests for the launcher-side protocol code. Real org.json is needed because the stub in
+// android.jar throws. Declared here so upstream's dependency block stays untouched.
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20240303'
+}

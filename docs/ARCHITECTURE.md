@@ -14,18 +14,22 @@
 | `MinecraftAdapter` (`Descriptor*`, `Mapped*`, `Reflective*`) | агент | Доступ к игре по именам из descriptor; Mapped — аварийный хардкод |
 | `MinecraftIconRenderer`, `MineThorRenderQueue` | агент | Рендер иконок на render thread |
 
-## Протокол (текущий v3 → целевой v4)
+## Протокол v4
 
-Фрейм: length-prefixed JSON (UTF). Сообщения:
-- агент → Android: `HELLO{protocolVersion}`, `SNAPSHOT{...,lastCommandId}`, `ICON{iconKey,status,png}`
-- Android → агент: `SELECT_HOTBAR_SLOT{commandId,slot}`, `REQUEST_ICON{iconKey}`
+Фрейм: 4 байта длины (big-endian) + UTF-8 JSON, максимум 64 КБ. Код: `BridgeProtocol` (агент), `CompanionProtocolCodec` (лаунчер).
 
-Цель v4: `HELLO{protocolVersion, mcVersion, loader, namespace, capabilities[]}`, токен в handshake, команды с `requestId`, ответы `ACK{requestId}` / `REJECTED_STALE_STATE` / `REJECTED_UNSUPPORTED` / `REJECTED_POLICY`, container-команды с `syncId`+`stateId`, `PING/PONG`. Любое изменение — через версию и тесты.
+1. Лаунчер перед запуском игры создаёт сессию: свободный loopback-порт и одноразовый токен (16 случайных байт, hex) и передаёт агенту `-Dminethor.port`, `-Dminethor.token`. Без них агент мост не поднимает.
+2. Лаунчер подключается и первым сообщением шлёт `HELLO{protocolVersion, token}`. Неверный токен (или не HELLO) — соединение закрывается молча. Токен верный, версия нет — `REJECTED{reason:PROTOCOL}`.
+3. Агент отвечает `HELLO{protocolVersion, clientThread, heartbeatMs, capabilities[]}`.
+4. Дальше: агент шлёт `SNAPSHOT{lastAppliedRequestId,...}` только при изменении, `ICON_DATA`, `PING` каждые 2 с; лаунчер отвечает `PONG` и шлёт запросы. Молчание дольше 6 с (лаунчер) / 10 с (агент) — разрыв и переподключение.
+5. Команды (`SELECT_HOTBAR_SLOT{requestId>0, slot}`): ровно один ответ `ACK{requestId}` или `REJECTED{requestId, reason}`. `requestId <= lastApplied` → `STALE_STATE`. Для контейнерных команд (Фаза 4) добавятся `syncId`/`stateId`.
+
+Правило безопасности: команда, получившая `TIMEOUT`, отменяется в очереди client thread и позже не выполнится.
 
 ## Потоки
 
 - **Client thread** (Minecraft): единственное место, где трогаются игровые объекты. Агент периодически (тик или scheduled `execute`) собирает snapshot в иммутабельный объект и публикует его в `volatile`.
-- **Bridge thread**: читает команды, кладёт в очередь для client thread, пишет последний snapshot. Не делает reflection по игровому состоянию.
+- **Bridge thread**: читает запросы, отдаёт работу на client thread через `ClientThread.call(task, timeout)` и ждёт ограниченное время. Игровые объекты напрямую не трогает (кроме режима `clientThread:false`, см. Фазу 0).
 - **Render thread**: иконки через очередь `MineThorRenderQueue`.
 - **Android**: сеть в фоне → state → `invalidate()` UI-потока только при изменении.
 

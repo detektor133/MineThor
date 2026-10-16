@@ -1,5 +1,7 @@
 package dev.minethor.agent;
 
+import java.util.concurrent.Executor;
+
 final class MinecraftStateAccess {
     private final MinecraftAdapter[] adapters = {
             new DescriptorMinecraftAdapter(),
@@ -11,6 +13,11 @@ final class MinecraftStateAccess {
         MinecraftAdapter adapter = adapter();
         if (adapter == null) return MinecraftSnapshot.disconnected();
         return adapter.readSnapshot();
+    }
+
+    Executor clientExecutor() {
+        MinecraftAdapter adapter = adapter();
+        return adapter == null ? null : adapter.clientExecutor();
     }
 
     boolean selectHotbarSlot(int slot) {

@@ -39,14 +39,14 @@
 **Приёмка:** `merge-base integration/dualscreen upstream/v3_openjdk` = коммит upstream; сборка debug APK проходит; следующий upstream-коммит подтягивается одной командой.
 
 ## Фаза 0 — Фундамент (блокирует всё)
-- [ ] Выполнение всех чтений/команд на client thread; сокет-поток только ставит в очередь и читает готовый snapshot
-- [ ] Одноразовый токен на запуск (лаунчер генерирует → аргумент агенту → handshake); порт выбирается свободный и передаётся
-- [ ] Protocol v4: `requestId` у команд, `ACK`/`REJECTED_*`, heartbeat, лимит размера, `capabilities` в HELLO
-- [ ] Snapshot по изменению (diff / dirty flag), а не безусловно каждые 100 мс
-- [ ] Unit tests: codec, stale state, unknown protocol version
-- [ ] Вынести резолвер маппингов/descriptor в чистый Java-модуль без Android API (нужен для conformance-тестов на JVM, см. [TESTING.md](TESTING.md))
-- [ ] Скрипты `scripts/minethor/` (smoke, замеры) и каркас CI
-- [ ] Лаунчер: чёткие статусы подключения (нет агента / нет маппингов / версия протокола / ок) — строки в resources
+- [x] Чтения и команды выполняются на client thread (`ClientThread`, executor находится по признакам: клиент — `Executor` или единственный public-метод `(Runnable)`; без привязки к версии). Если у версии такого механизма нет — команды отклоняются `UNSUPPORTED`, чтение best-effort, в HELLO `clientThread:false`. Дозапись: проверить на реальных версиях (Фаза 1, conformance)
+- [x] Одноразовый токен на запуск и свободный порт (`CompanionEndpoint.newSession` → `-Dminethor.port/-Dminethor.token` → HELLO с токеном; без сессии мост выключен; неверный токен — тихий разрыв)
+- [x] Protocol v4: `requestId`, `ACK`/`REJECTED{reason}` (`STALE_STATE`, `UNSUPPORTED`, `POLICY`, `BAD_REQUEST`, `TIMEOUT`, `PROTOCOL`), `PING`/`PONG` (2 с / обрыв 6–10 с), лимит кадра 64 КБ, `capabilities` + `clientThread` в HELLO, откат оптимистичного выбора слота при REJECTED
+- [x] Snapshot отправляется только при изменении (опрос игры раз в 100 мс остаётся: тика-хука без байткод-инструментации нет)
+- [x] Unit tests: 20 в агенте (протокол, handshake/токен, версия, stale/replay, ClientThread с отменой после таймаута) и 9 в лаунчере (codec, версия, requestId, токены). Нет сквозного теста по реальному сокету
+- [ ] → перенесено в Фазу 1: вынести резолвер маппингов в чистый Java-модуль (нужен для conformance-тестов, см. [TESTING.md](TESTING.md))
+- [ ] → перенесено: скрипты smoke/замеров и каркас CI (после первых реальных запусков на Thor)
+- [~] Статусы подключения есть в коде (`CompanionEndpoint.Status`: ожидание игры / подключение / ок / токен отклонён / версия протокола; `mappingsAvailable`). Показ пользователю и строки в resources — в Фазе 3 вместе с редизайном
 
 **Приёмка:** 30 минут игры без «мигания» HUD; чужое приложение без токена не может подключиться; тесты зелёные.
 

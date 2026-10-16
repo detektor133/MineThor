@@ -20,3 +20,11 @@ jar {
     preserveFileTimestamps = false
     reproducibleFileOrder = true
 }
+
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}
+
+tasks.named('test') {
+    useJUnit()
+}

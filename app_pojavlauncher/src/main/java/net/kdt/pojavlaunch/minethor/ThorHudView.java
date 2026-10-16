@@ -46,7 +46,7 @@ public class ThorHudView extends View {
 
     public ThorHudView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
-        this.controller = new ThorCompanionController(new SocketCompanionStateProvider(CompanionEndpoint.LOOPBACK_HOST, CompanionEndpoint.PORT));
+        this.controller = new ThorCompanionController(new SocketCompanionStateProvider());
         init();
         this.controller.setListener(this::postInvalidate);
     }

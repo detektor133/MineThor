@@ -8,14 +8,25 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.IntPredicate;
 
+/**
+ * Loopback bridge between the game and the Android launcher. Started by {@link MineThorAgent}.
+ * The launcher passes a free port and a one-time token as JVM arguments
+ * ({@code -Dminethor.port}, {@code -Dminethor.token}); without them the bridge stays off.
+ */
 public final class MineThorBridgeServer {
     private static final String HOST = "127.0.0.1";
-    private static final int PORT = 25566;
-    private static final int PROTOCOL_VERSION = 3;
     private static final int ACCEPT_TIMEOUT_MS = 250;
+    private static final int HANDSHAKE_TIMEOUT_MS = 3000;
     private static final int CLIENT_READ_TIMEOUT_MS = 50;
     private static final int SNAPSHOT_INTERVAL_MS = 100;
+    private static final int HEARTBEAT_INTERVAL_MS = 2000;
+    private static final int DEAD_PEER_TIMEOUT_MS = 10000;
+    private static final int SNAPSHOT_READ_TIMEOUT_MS = 80;
+    private static final int COMMAND_TIMEOUT_MS = 250;
     private static volatile boolean started;
 
     private MineThorBridgeServer() {
@@ -23,22 +34,30 @@ public final class MineThorBridgeServer {
 
     public static void start() {
         if (started) return;
+
+        int port = Integer.getInteger("minethor.port", 0);
+        String token = System.getProperty("minethor.token", "");
+        if (port <= 0 || token.isEmpty()) {
+            System.out.println("MineThorBridge: disabled, the launcher did not provide a session");
+            return;
+        }
         started = true;
 
-        Thread worker = new Thread(MineThorBridgeServer::serverLoop, "MineThorBridgeServer");
+        Thread worker = new Thread(() -> serverLoop(port, token), "MineThorBridgeServer");
         worker.setDaemon(true);
         worker.start();
     }
 
-    private static void serverLoop() {
-        MinecraftStateAccess minecraftStateAccess = new MinecraftStateAccess();
-        try (ServerSocket serverSocket = new ServerSocket(PORT, 1, InetAddress.getByName(HOST))) {
+    private static void serverLoop(int port, String token) {
+        MinecraftStateAccess state = new MinecraftStateAccess();
+        ClientThread clientThread = new ClientThread(state::clientExecutor);
+        try (ServerSocket serverSocket = new ServerSocket(port, 1, InetAddress.getByName(HOST))) {
             serverSocket.setSoTimeout(ACCEPT_TIMEOUT_MS);
-            System.out.println("MineThorBridge: listening on " + HOST + ":" + PORT);
+            System.out.println("MineThorBridge: listening on " + HOST + ":" + port);
 
             while (true) {
                 try {
-                    serveClient(serverSocket.accept(), minecraftStateAccess);
+                    serveClient(serverSocket.accept(), token, state, clientThread);
                 } catch (SocketTimeoutException ignored) {
                 }
             }
@@ -47,41 +66,85 @@ public final class MineThorBridgeServer {
         }
     }
 
-    private static void serveClient(Socket socket, MinecraftStateAccess minecraftStateAccess) {
+    private static void serveClient(Socket socket, String token, MinecraftStateAccess state, ClientThread clientThread) {
         try (Socket clientSocket = socket) {
-            clientSocket.setSoTimeout(CLIENT_READ_TIMEOUT_MS);
             DataInputStream input = new DataInputStream(clientSocket.getInputStream());
             DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
-            int lastAppliedCommandId = 0;
-            MinecraftIconRenderer iconRenderer = new MinecraftIconRenderer();
-            writeMessage(output, helloMessage());
 
-            long lastSnapshotAt = 0L;
+            clientSocket.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
+            BridgeProtocol.HelloCheck check = BridgeProtocol.checkHello(BridgeProtocol.parse(BridgeProtocol.readFrame(input)), token);
+            if (check == BridgeProtocol.HelloCheck.AUTH_FAILED) return; // silent close, reveals nothing
+            if (check == BridgeProtocol.HelloCheck.PROTOCOL_MISMATCH) {
+                BridgeProtocol.writeFrame(output, BridgeProtocol.rejected(0, BridgeProtocol.REASON_PROTOCOL));
+                return;
+            }
+            clientSocket.setSoTimeout(CLIENT_READ_TIMEOUT_MS);
+
+            boolean clientThreadAvailable = clientThread.available();
+            BridgeProtocol.writeFrame(output, BridgeProtocol.hello(clientThreadAvailable, capabilities(clientThreadAvailable), HEARTBEAT_INTERVAL_MS));
+            if (!clientThreadAvailable) {
+                System.out.println("MineThorBridge: no client-thread executor, game state is read best-effort and commands are refused");
+            }
+
+            MinecraftIconRenderer iconRenderer = new MinecraftIconRenderer();
+            int lastAppliedRequestId = 0;
+            String lastSnapshot = null;
+            boolean forceSnapshot = true;
+            long now = System.currentTimeMillis();
+            long lastReceivedAt = now;
+            long lastSentAt = now;
+            long lastPollAt = 0L;
+
             while (!clientSocket.isClosed()) {
-                Command command = readCommandIfAvailable(input);
-                if (command != null && "REQUEST_ICON".equals(command.type)) {
-                    MinecraftIconRenderer.IconRenderResult result = iconRenderer.requestIcon(command.iconKey);
-                    if (!result.status.startsWith("pending:")) {
-                        writeMessage(output, iconMessage(command.iconKey, result));
-                    }
-                } else if (command != null && command.commandId > lastAppliedCommandId) {
-                    boolean applied = applyCommand(minecraftStateAccess, command);
-                    if (applied) {
-                        lastAppliedCommandId = command.commandId;
-                        writeMessage(output, snapshotMessage(minecraftStateAccess.readSnapshot(), lastAppliedCommandId));
-                        lastSnapshotAt = System.currentTimeMillis();
+                BridgeProtocol.Request request = readRequest(input);
+                now = System.currentTimeMillis();
+                if (request != null) {
+                    lastReceivedAt = now;
+                    if ("REQUEST_ICON".equals(request.type)) {
+                        MinecraftIconRenderer.IconRenderResult result = iconRenderer.requestIcon(request.iconKey);
+                        if (!result.status.startsWith("pending:")) writeIcon(output, request.iconKey, result);
+                    } else if ("PING".equals(request.type)) {
+                        BridgeProtocol.writeFrame(output, BridgeProtocol.pong());
+                    } else if ("SELECT_HOTBAR_SLOT".equals(request.type)) {
+                        String reply = selectHotbarSlot(request, lastAppliedRequestId, clientThread, state::selectHotbarSlot);
+                        BridgeProtocol.writeFrame(output, reply);
+                        if (reply.startsWith("{\"type\":\"ACK\"")) {
+                            lastAppliedRequestId = request.requestId;
+                            forceSnapshot = true;
+                        }
+                        lastSentAt = now;
+                    } else if (request.requestId > 0 && !"PONG".equals(request.type)) {
+                        BridgeProtocol.writeFrame(output, BridgeProtocol.rejected(request.requestId, BridgeProtocol.REASON_BAD_REQUEST));
                     }
                 }
 
                 MineThorRenderQueue.CompletedIcon completedIcon;
                 while ((completedIcon = iconRenderer.pollCompletedIcon()) != null) {
-                    writeMessage(output, iconMessage(completedIcon.iconKey, completedIcon.result));
+                    writeIcon(output, completedIcon.iconKey, completedIcon.result);
                 }
 
-                long now = System.currentTimeMillis();
-                if (now - lastSnapshotAt >= SNAPSHOT_INTERVAL_MS) {
-                    writeMessage(output, snapshotMessage(minecraftStateAccess.readSnapshot(), lastAppliedCommandId));
-                    lastSnapshotAt = now;
+                if (now - lastPollAt >= SNAPSHOT_INTERVAL_MS) {
+                    lastPollAt = now;
+                    MinecraftSnapshot snapshot = readSnapshot(state, clientThread, clientThreadAvailable);
+                    if (snapshot != null) {
+                        // Only send when something changed; unchanged state costs nothing on the wire.
+                        String json = BridgeProtocol.snapshot(snapshot, lastAppliedRequestId);
+                        if (forceSnapshot || !json.equals(lastSnapshot)) {
+                            BridgeProtocol.writeFrame(output, json);
+                            lastSnapshot = json;
+                            lastSentAt = now;
+                            forceSnapshot = false;
+                        }
+                    }
+                }
+
+                if (now - lastSentAt >= HEARTBEAT_INTERVAL_MS) {
+                    BridgeProtocol.writeFrame(output, BridgeProtocol.ping());
+                    lastSentAt = now;
+                }
+                if (now - lastReceivedAt > DEAD_PEER_TIMEOUT_MS) {
+                    System.out.println("MineThorBridge: launcher stopped answering heartbeat");
+                    return;
                 }
             }
         } catch (EOFException ignored) {
@@ -90,149 +153,53 @@ public final class MineThorBridgeServer {
         }
     }
 
-    private static boolean applyCommand(MinecraftStateAccess minecraftStateAccess, Command command) {
-        if ("SELECT_HOTBAR_SLOT".equals(command.type)) {
-            return minecraftStateAccess.selectHotbarSlot(command.slot);
+    /** Returns the wire reply (ACK or REJECTED) for a hotbar selection. */
+    static String selectHotbarSlot(BridgeProtocol.Request request, int lastAppliedRequestId, ClientThread clientThread, IntPredicate hotbarSetter) {
+        if (request.requestId <= 0 || request.slot < 0 || request.slot > 8) {
+            return BridgeProtocol.rejected(request.requestId, BridgeProtocol.REASON_BAD_REQUEST);
         }
-        return false;
+        if (request.requestId <= lastAppliedRequestId) {
+            return BridgeProtocol.rejected(request.requestId, BridgeProtocol.REASON_STALE_STATE);
+        }
+        if (!clientThread.available()) {
+            return BridgeProtocol.rejected(request.requestId, BridgeProtocol.REASON_UNSUPPORTED);
+        }
+
+        int slot = request.slot;
+        Boolean applied = clientThread.call(() -> hotbarSetter.test(slot), COMMAND_TIMEOUT_MS, null);
+        if (applied == null) return BridgeProtocol.rejected(request.requestId, BridgeProtocol.REASON_TIMEOUT);
+        if (!applied) return BridgeProtocol.rejected(request.requestId, BridgeProtocol.REASON_UNSUPPORTED);
+        return BridgeProtocol.ack(request.requestId);
     }
 
-    private static Command readCommandIfAvailable(DataInputStream input) throws IOException {
-        try {
-            String json = readMessage(input);
-            if (JsonProtocol.intValue(json, "protocolVersion", -1) != PROTOCOL_VERSION) return null;
-            String type = JsonProtocol.stringValue(json, "type", "");
-            int commandId = JsonProtocol.intValue(json, "commandId", 0);
-            if (!"REQUEST_ICON".equals(type) && commandId <= 0) return null;
+    private static MinecraftSnapshot readSnapshot(MinecraftStateAccess state, ClientThread clientThread, boolean clientThreadAvailable) {
+        if (clientThreadAvailable) return clientThread.call(state::readSnapshot, SNAPSHOT_READ_TIMEOUT_MS, null);
+        return state.readSnapshot(); // best effort, see the HELLO clientThread flag
+    }
 
-            return new Command(
-                    type,
-                    commandId,
-                    JsonProtocol.intValue(json, "slot", -1),
-                    JsonProtocol.stringValue(json, "iconKey", "")
-            );
+    private static String[] capabilities(boolean clientThreadAvailable) {
+        List<String> list = new ArrayList<>();
+        list.add("player.state");
+        list.add("inventory.read");
+        list.add("item.icon");
+        if (clientThreadAvailable) list.add("hotbar.select");
+        return list.toArray(new String[0]);
+    }
+
+    private static void writeIcon(DataOutputStream output, String iconKey, MinecraftIconRenderer.IconRenderResult result) throws IOException {
+        String message = BridgeProtocol.icon(iconKey, result.status, result.byteCount, result.pngBase64);
+        if (!BridgeProtocol.fits(message)) {
+            // An oversized icon must not kill the connection.
+            message = BridgeProtocol.icon(iconKey, "too_large", result.byteCount, "");
+        }
+        BridgeProtocol.writeFrame(output, message);
+    }
+
+    private static BridgeProtocol.Request readRequest(DataInputStream input) throws IOException {
+        try {
+            return BridgeProtocol.parse(BridgeProtocol.readFrame(input));
         } catch (SocketTimeoutException ignored) {
             return null;
-        }
-    }
-
-    private static String helloMessage() {
-        return "{\"type\":\"HELLO\",\"protocolVersion\":" + PROTOCOL_VERSION + "}";
-    }
-
-    private static String snapshotMessage(MinecraftSnapshot snapshot, int lastAppliedCommandId) {
-        return "{\"type\":\"SNAPSHOT\",\"protocolVersion\":" + PROTOCOL_VERSION
-                + ",\"connected\":" + snapshot.connected
-                + ",\"lastAppliedCommandId\":" + lastAppliedCommandId
-                + ",\"player\":{"
-                + "\"x\":" + snapshot.x
-                + ",\"y\":" + snapshot.y
-                + ",\"z\":" + snapshot.z
-                + ",\"yaw\":" + snapshot.yaw
-                + ",\"health\":" + snapshot.health
-                + ",\"maxHealth\":" + snapshot.maxHealth
-                + ",\"food\":" + snapshot.food
-                + ",\"maxFood\":" + snapshot.maxFood
-                + ",\"armor\":" + snapshot.armor
-                + ",\"xpLevel\":" + snapshot.xpLevel
-                + ",\"dayTime\":" + snapshot.dayTime
-                + "},\"inventory\":{"
-                + "\"selectedHotbarSlot\":" + snapshot.selectedHotbarSlot
-                + ",\"selectedInventorySlot\":" + snapshot.selectedInventorySlot
-                + ",\"mainSlots\":" + slotsMessage(snapshot.mainSlots)
-                + ",\"armorSlots\":" + slotsMessage(snapshot.armorSlots)
-                + ",\"offhandSlots\":" + slotsMessage(snapshot.offhandSlots)
-                + "}}";
-    }
-
-    private static String iconMessage(String iconKey, MinecraftIconRenderer.IconRenderResult result) {
-        return "{\"type\":\"ICON_DATA\",\"protocolVersion\":" + PROTOCOL_VERSION
-                + ",\"iconKey\":\"" + escapeJson(iconKey) + "\""
-                + ",\"debugStatus\":\"" + escapeJson(result.status) + "\""
-                + ",\"debugBytes\":" + result.byteCount
-                + ",\"pngBase64\":\"" + escapeJson(result.pngBase64) + "\"}";
-    }
-
-    private static String slotsMessage(InventorySlotSnapshot[] slots) {
-        StringBuilder builder = new StringBuilder("[");
-        for (int i = 0; i < slots.length; i++) {
-            if (i > 0) builder.append(',');
-            builder.append(slotMessage(slots[i]));
-        }
-        return builder.append(']').toString();
-    }
-
-    private static String slotMessage(InventorySlotSnapshot slot) {
-        if (slot == null) slot = InventorySlotSnapshot.empty(0);
-        return "{\"index\":" + slot.index
-                + ",\"itemId\":\"" + escapeJson(slot.itemId) + "\""
-                + ",\"name\":\"" + escapeJson(slot.name) + "\""
-                + ",\"iconKey\":\"" + escapeJson(slot.iconKey) + "\""
-                + ",\"count\":" + slot.count
-                + ",\"damage\":" + slot.damage
-                + ",\"maxDamage\":" + slot.maxDamage
-                + "}";
-    }
-
-    private static String escapeJson(String value) {
-        if (value == null || value.isEmpty()) return "";
-
-        StringBuilder builder = new StringBuilder(value.length());
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            switch (c) {
-                case '\\':
-                    builder.append("\\\\");
-                    break;
-                case '"':
-                    builder.append("\\\"");
-                    break;
-                case '\n':
-                    builder.append("\\n");
-                    break;
-                case '\r':
-                    builder.append("\\r");
-                    break;
-                case '\t':
-                    builder.append("\\t");
-                    break;
-                default:
-                    builder.append(c);
-                    break;
-            }
-        }
-        return builder.toString();
-    }
-
-    private static String readMessage(DataInputStream input) throws IOException {
-        int length = input.readInt();
-        if (length <= 0 || length > 64 * 1024) {
-            throw new IOException("Invalid MineThor message size: " + length);
-        }
-
-        byte[] bytes = new byte[length];
-        input.readFully(bytes);
-        return new String(bytes, "UTF-8");
-    }
-
-    private static void writeMessage(DataOutputStream output, String message) throws IOException {
-        byte[] bytes = message.getBytes("UTF-8");
-        output.writeInt(bytes.length);
-        output.write(bytes);
-        output.flush();
-    }
-
-    private static final class Command {
-        final String type;
-        final int commandId;
-        final int slot;
-        final String iconKey;
-
-        Command(String type, int commandId, int slot, String iconKey) {
-            this.type = type;
-            this.commandId = commandId;
-            this.slot = slot;
-            this.iconKey = iconKey;
         }
     }
 }

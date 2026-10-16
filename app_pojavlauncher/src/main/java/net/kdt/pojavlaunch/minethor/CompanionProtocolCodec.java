@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public final class CompanionProtocolCodec {
-    public static final int PROTOCOL_VERSION = 3;
+    public static final int PROTOCOL_VERSION = 4;
     private static final int MAX_MESSAGE_BYTES = 64 * 1024;
 
     private CompanionProtocolCodec() {
@@ -74,11 +74,25 @@ public final class CompanionProtocolCodec {
         return message;
     }
 
-    public static JSONObject helloMessage() throws JSONException {
+    public static JSONObject helloMessage(String token) throws JSONException {
         JSONObject message = new JSONObject();
         message.put("type", "HELLO");
         message.put("protocolVersion", PROTOCOL_VERSION);
+        message.put("token", token);
         return message;
+    }
+
+    public static JSONObject pongMessage() throws JSONException {
+        JSONObject message = new JSONObject();
+        message.put("type", "PONG");
+        message.put("protocolVersion", PROTOCOL_VERSION);
+        return message;
+    }
+
+    /** True if the message is a REJECTED reply for exactly this request. */
+    public static boolean isRejectionOf(JSONObject message, int requestId) {
+        return "REJECTED".equals(message.optString("type", "")) && requestId > 0
+                && message.optInt("requestId", -1) == requestId;
     }
 
     public static JSONObject iconRequest(String iconKey) throws JSONException {
@@ -94,7 +108,7 @@ public final class CompanionProtocolCodec {
         message.put("type", "SNAPSHOT");
         message.put("protocolVersion", PROTOCOL_VERSION);
         message.put("connected", snapshot.connected);
-        message.put("lastAppliedCommandId", snapshot.lastAppliedCommandId);
+        message.put("lastAppliedRequestId", snapshot.lastAppliedCommandId);
         message.put("player", playerToJson(snapshot.player));
         message.put("inventory", inventoryToJson(snapshot.inventory));
         return message;
@@ -103,13 +117,13 @@ public final class CompanionProtocolCodec {
     private static JSONObject command(String type, int commandId) throws JSONException {
         JSONObject message = new JSONObject();
         message.put("type", type);
-        message.put("commandId", commandId);
+        message.put("requestId", commandId);
         message.put("protocolVersion", PROTOCOL_VERSION);
         return message;
     }
 
     private static int commandAckFromJson(CompanionSnapshot current, JSONObject message) {
-        return Math.max(current.lastAppliedCommandId, message.optInt("lastAppliedCommandId", current.lastAppliedCommandId));
+        return Math.max(current.lastAppliedCommandId, message.optInt("lastAppliedRequestId", current.lastAppliedCommandId));
     }
 
     private static PlayerSnapshot playerFromJson(PlayerSnapshot current, JSONObject message) {

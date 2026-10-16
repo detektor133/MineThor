@@ -24,7 +24,7 @@ public class ThorCompanionPresentation extends Presentation {
             window.addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE);
         }
         Log.i(TAG, "Presentation created on display " + getDisplay().getDisplayId());
-        CompanionStateProvider provider = new SocketCompanionStateProvider(CompanionEndpoint.LOOPBACK_HOST, CompanionEndpoint.PORT);
+        CompanionStateProvider provider = new SocketCompanionStateProvider();
         controller = new ThorCompanionController(provider);
         setContentView(new ThorHudView(getContext(), controller));
     }

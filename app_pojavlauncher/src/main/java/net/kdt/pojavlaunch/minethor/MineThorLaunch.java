@@ -74,8 +74,16 @@ public final class MineThorLaunch {
         }
 
         String descriptor = MineThorMappingResolver.resolveDescriptorForLaunch(versionId, versionInfo);
+        CompanionEndpoint.setMappingsAvailable(descriptor != null);
         if (descriptor != null) {
             jvmArgs.add("-Dminethor.mappingDescriptor=" + descriptor);
+        }
+        // One-time token and a free loopback port for this launch; the agent refuses to start without them.
+        if (CompanionEndpoint.newSession()) {
+            jvmArgs.add("-Dminethor.port=" + CompanionEndpoint.port());
+            jvmArgs.add("-Dminethor.token=" + CompanionEndpoint.token());
+        } else {
+            Log.w(TAG, "No free loopback port, companion bridge disabled");
         }
         // LWJGL hash checks are not needed (and break) on the Android runtime.
         jvmArgs.add("-Dorg.lwjgl.util.NoChecks=true");
