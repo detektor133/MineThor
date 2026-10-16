@@ -5,6 +5,7 @@ import android.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -104,7 +105,8 @@ public class SocketCompanionStateProvider implements CompanionStateProvider {
 
                 socket.connect(new InetSocketAddress(address, port), CONNECT_TIMEOUT_MS);
                 socket.setSoTimeout(CONNECT_TIMEOUT_MS);
-                DataOutputStream socketOutput = new DataOutputStream(socket.getOutputStream());
+                // Buffered so writeInt(length)+write(body) leave in one send(), never split across a read timeout.
+                DataOutputStream socketOutput = new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
                 output = socketOutput;
                 outgoingMessages.clear();
                 lastReceivedAt = System.currentTimeMillis();

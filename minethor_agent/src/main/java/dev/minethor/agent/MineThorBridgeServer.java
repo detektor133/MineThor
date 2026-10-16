@@ -1,5 +1,6 @@
 package dev.minethor.agent;
 
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -21,7 +22,9 @@ public final class MineThorBridgeServer {
     private static final String HOST = "127.0.0.1";
     private static final int ACCEPT_TIMEOUT_MS = 250;
     private static final int HANDSHAKE_TIMEOUT_MS = 3000;
-    private static final int CLIENT_READ_TIMEOUT_MS = 50;
+    // 150ms, not 50: on loopback a tiny frame is one TCP send, but giving the OS a little
+    // slack here avoids ever treating a slow-arriving (not missing) frame as corrupt input.
+    private static final int CLIENT_READ_TIMEOUT_MS = 150;
     private static final int SNAPSHOT_INTERVAL_MS = 100;
     private static final int HEARTBEAT_INTERVAL_MS = 2000;
     private static final int DEAD_PEER_TIMEOUT_MS = 10000;
@@ -69,7 +72,8 @@ public final class MineThorBridgeServer {
     private static void serveClient(Socket socket, String token, MinecraftStateAccess state, ClientThread clientThread) {
         try (Socket clientSocket = socket) {
             DataInputStream input = new DataInputStream(clientSocket.getInputStream());
-            DataOutputStream output = new DataOutputStream(clientSocket.getOutputStream());
+            // Buffered so writeInt(length)+write(body) leave in one send(), never split across a read timeout.
+            DataOutputStream output = new DataOutputStream(new BufferedOutputStream(clientSocket.getOutputStream()));
 
             clientSocket.setSoTimeout(HANDSHAKE_TIMEOUT_MS);
             BridgeProtocol.HelloCheck check = BridgeProtocol.checkHello(BridgeProtocol.parse(BridgeProtocol.readFrame(input)), token);
